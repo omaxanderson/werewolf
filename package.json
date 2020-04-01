@@ -5,18 +5,33 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "build:react": "webpack && mkdir -p ./dist/public && cp ./public/* ./dist/public",
+    "build:server": "mkdir -p dist/views && cp ./src/views/* ./dist/views && tsc",
+    "build": "npm run build:server && npm run build:react",
+    "start": "npm run build && node ./dist/app.js",
+    "clean": "rm -rf ./dist && rm public/*"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/cookie-parser": "^1.4.2",
+    "@types/express": "^4.17.4",
+    "@types/http-errors": "^1.6.3",
+    "@types/morgan": "^1.9.0",
+    "@types/node-sass-middleware": "0.0.31",
+    "cookie-parser": "^1.4.5",
     "express": "^4.17.1",
+    "http-errors": "^1.7.3",
+    "morgan": "^1.10.0",
+    "node-sass-middleware": "^0.11.0",
+    "pug": "^2.0.4",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
     "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/polyfill": "^7.8.7",
     "@babel/preset-env": "^7.9.0",
     "@babel/preset-react": "^7.9.4",
     "@types/node": "^13.9.8",
@@ -25,10 +40,12 @@
     "babel-loader": "^8.1.0",
     "html-loader": "^1.0.0",
     "html-webpack-plugin": "^4.0.4",
+    "pug-loader": "^2.4.0",
     "source-map-loader": "^0.2.4",
     "ts-loader": "^6.2.2",
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
   }
 }

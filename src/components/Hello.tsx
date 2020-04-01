@@ -1,7 +1,9 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import React from 'react';
+import ReactDOM from 'react-dom';
 
-export interface HelloProps { compiler: string; framework: string; }
+export interface HelloProps {
+    compiler: string; framework: string;
+}
 
 export class Hello extends React.Component<HelloProps, {}> {
     render() {
@@ -11,5 +13,5 @@ export class Hello extends React.Component<HelloProps, {}> {
 
 ReactDOM.render(
     <Hello compiler="TypeScript" framework="React" />,
-    document.getElementById('example'),
+    document.getElementById('root'),
 );
