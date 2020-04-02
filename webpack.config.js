@@ -21,7 +21,7 @@ module.exports = {
     },
     entry: entries(),
     output: {
-        path: path.resolve(__dirname, 'public'),
+        path: path.resolve(__dirname, 'src/public/js'),
     },
     module: {
         rules: [

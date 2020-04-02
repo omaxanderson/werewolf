@@ -5,8 +5,11 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import sassMiddleware from 'node-sass-middleware';
 import * as http from 'http';
+import Request from './util/parseUrl';
+import WebSocket from 'ws';
 
 import indexRouter from './routes';
+import parseUrl from './util/parseUrl';
 // import usersRouter from './routes/users';
 
 const debug = require('debug')('untitled:server');
@@ -69,6 +72,41 @@ server.listen(port);
 console.log(`Listening on port ${port}`);
 server.on('error', onError);
 server.on('listening', onListening);
+
+interface MyWebSocket extends WebSocket {
+  roomId: string;
+}
+
+/**
+ * Web Socket setup
+ */
+const webSocketServer = new WebSocket.Server({ server });
+webSocketServer.on('connection', (webSocket: WebSocket, req: http.IncomingMessage) => {
+  // Have to manually re-type this
+  const ws = webSocket as MyWebSocket;
+  const { query: { id } } = parseUrl(req);
+  if (!Array.isArray(id)) {
+    ws.roomId = id;
+  } else {
+    // probably throw but we'll get there later
+  }
+  ws.on('message', (message: string) => {
+    // TODO at some point we're gonna want to start JSON.parse-ing this
+    const broadcastRegex = /^broadcast\:/;
+    if (broadcastRegex.test(message)) {
+      message = message.replace(broadcastRegex, '');
+      webSocketServer.clients
+        .forEach((client: MyWebSocket) => {
+        if (client != ws && client.roomId === ws.roomId) {
+          client.send(`Broadcasted message: ${message}`);
+        }
+      });
+    } else {
+      ws.send(`Yo you sent me: ${message}`)
+    }
+  });
+  ws.send('Hey, you have connected!');
+});
 
 /**
  * Normalize a port into a number, string, or false.

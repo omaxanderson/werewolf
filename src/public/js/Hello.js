@@ -38800,7 +38800,7 @@ var Hello = /** @class */ (function (_super) {
     }
     Hello.prototype.render = function () {
         return react_1["default"].createElement("h1", null,
-            "Hello from ",
+            "Hello World whats up! From ",
             this.props.compiler,
             " and ",
             this.props.framework,
