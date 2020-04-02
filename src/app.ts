@@ -5,12 +5,10 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import sassMiddleware from 'node-sass-middleware';
 import * as http from 'http';
-import Request from './util/parseUrl';
 import WebSocket from 'ws';
 
-import indexRouter from './routes';
 import parseUrl from './util/parseUrl';
-// import usersRouter from './routes/users';
+import indexRouter from './routes';
 
 const debug = require('debug')('untitled:server');
 

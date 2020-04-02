@@ -28,6 +28,8 @@
     "pug": "^2.0.4",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "uuid": "^7.0.3",
+    "websocket": "^1.0.31",
     "ws": "^7.2.3"
   },
   "devDependencies": {
@@ -39,6 +41,7 @@
     "@types/node": "^13.9.8",
     "@types/react": "^16.9.31",
     "@types/react-dom": "^16.9.6",
+    "@types/websocket": "^1.0.0",
     "@types/ws": "^7.2.3",
     "babel-loader": "^8.1.0",
     "concurrently": "^5.1.0",

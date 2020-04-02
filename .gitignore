@@ -1,4 +1,6 @@
 node_modules
 dist
 build
-./src/public/js
+images
+js
+.DS_Store
