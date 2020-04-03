@@ -2,19 +2,13 @@ import express from 'express';
 import bodyParser from 'body-parser';
 const router = express.Router();
 
-router.get('/', (req, res, next) => {
+const homeHandler = (req, res, next) => {
   res.render('home', {
-    title: 'test test',
+    title: 'Werewolf Online',
   });
-});
+};
 
-router.get('^/:roomId([0-9a-fA-F]{8})$', (req, res) => {
-  const { roomId } = req.params;
-  console.log('roomid', roomId);
-  res.render('home', {
-    roomId,
-    title: 'in the room!!!',
-  });
-});
+router.get('/', homeHandler);
+router.get(/^\/[a-f0-9]{8}/, homeHandler);
 
 export default router;
