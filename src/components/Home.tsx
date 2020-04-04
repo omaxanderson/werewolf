@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import shortId from '../util/shortId';
 import * as WebSocket from 'websocket';
 import cloneDeep from 'lodash/cloneDeep';
-import {WebSocketAction} from "../websocket";
+import { WebSocketAction } from "../websocket";
+import Setup from "./Setup";
 
 const WebSocketClient = WebSocket.w3cwebsocket;
 
@@ -13,12 +14,12 @@ declare global {
   }
 }
 
-interface Player {
+export interface Player {
   name: string;
   color?: string;
 }
 
-interface Room {
+export interface Room {
   players: Player[];
 }
 
@@ -42,6 +43,14 @@ export class Home extends React.Component<{}, {
         players: [],
       },
     }
+  }
+
+  // debugging purposes, delete before use
+  componentDidMount(): void {
+    this.setState({ name: 'max' }, () => {
+      this.connectToWebsocket();
+      this.setState({ joined: true });
+    });
   }
 
   connectToWebsocket = (): void => {
@@ -70,7 +79,7 @@ export class Home extends React.Component<{}, {
   };
 
   onNameChange = (e) => {
-    this.setState({name: e.target.value});
+    this.setState({ name: e.target.value });
   };
 
   createNewGame = () => {
@@ -89,31 +98,23 @@ export class Home extends React.Component<{}, {
       roomId,
       joined,
       room,
+      client,
     } = this.state;
     return (
       <div>
         <div>
           <label htmlFor="name">Name</label>
-          <input type="text" name="name" onChange={this.onNameChange} />
+          <input type="text" name="name" onChange={this.onNameChange}/>
         </div>
-        {!joined ? (
+        {joined ? <Setup room={room} client={client} />: (
           <>
             <div>
-                <button
-                    onClick={roomId ? this.joinGame : this.createNewGame}
-                    disabled={!name}
-                >
-                  {roomId ? 'Join' : 'Create'} Game
-                </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              Room Members
-            </div>
-            <div>
-              {room.players.map(player => <div>{player.name}</div>)}
+              <button
+                onClick={roomId ? this.joinGame : this.createNewGame}
+                disabled={!name}
+              >
+                {roomId ? 'Join' : 'Create'} Game
+              </button>
             </div>
           </>
         )}
@@ -123,6 +124,6 @@ export class Home extends React.Component<{}, {
 }
 
 ReactDOM.render(
-    <Home />,
-    document.getElementById('root'),
+  <Home/>,
+  document.getElementById('root'),
 );
