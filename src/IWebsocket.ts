@@ -1,4 +1,4 @@
-import { GameOptions } from './components/Game';
+import { GameOptions } from './components/Interfaces';
 
 export interface WebSocketMessage {
   action: WebSocketAction;

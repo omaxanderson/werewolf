@@ -1,9 +1,8 @@
 import React from 'react';
 import * as WebSocket from 'websocket';
 import cloneDeep from 'lodash/cloneDeep';
-import { Room } from "./Home";
 import C, { Character, Team } from './Characters';
-import { GameOptions } from "./Game";
+import { Room } from './Interfaces';
 
 export default class Setup extends React.Component<{
   room: Room;

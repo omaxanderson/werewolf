@@ -5,7 +5,9 @@ import * as WebSocket from 'websocket';
 import cloneDeep from 'lodash/cloneDeep';
 import { WebSocketAction } from '../IWebsocket';
 import Setup from './Setup';
-import Game, { GameOptions } from './Game';
+import Game from './Game';
+import { GameOptions } from './Interfaces';
+import { Room } from './Interfaces';
 
 const WebSocketClient = WebSocket.w3cwebsocket;
 
@@ -13,15 +15,6 @@ declare global {
   interface Window {
     roomId: string;
   }
-}
-
-export interface Player {
-  name: string;
-  color?: string;
-}
-
-export interface Room {
-  players: Player[];
 }
 
 export class Home extends React.Component <{}, {

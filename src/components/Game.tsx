@@ -1,18 +1,8 @@
 import React from 'react';
 import { Character } from "./Characters";
-import { Room } from './Home';
-import { start } from 'repl';
+import { Room } from './Interfaces';
 import Player from './Player';
-
-export interface GameOptions {
-  gameId: string;
-  characters: Character[];
-  originalCharacters: Character[];
-  secondsPerCharacter: number;
-  secondsToConference: number;
-  startingCharacter: Character;
-  conferenceStart?: number;
-}
+import { GameOptions } from './Interfaces';
 
 function isCharacter(c: Character | any): c is Character {
   return c && ((c as Character).name !== undefined);
@@ -142,7 +132,7 @@ export default class Game extends React.Component<{
       <>
         {startingCharacter && <div>You are the <strong>{startingCharacter.name}</strong></div>}
         <div style={{ display: 'flex' }}>
-          {room.players.map(player => <Player name={player.name} color={player.color} />)}
+          {room.players.map(player => <Player player={player} />)}
         </div>
         {jsx}
       </>

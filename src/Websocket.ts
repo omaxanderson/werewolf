@@ -5,7 +5,7 @@ import shuffle from 'lodash/shuffle';
 import { v4 } from 'uuid';
 import Redis, { ok } from './Redis';
 import parseUrl from "./util/parseUrl";
-import { GameOptions } from './components/Game';
+import { GameOptions } from './components/Interfaces';
 import { Character } from './components/Characters';
 import shortId from './util/shortId';
 import {
