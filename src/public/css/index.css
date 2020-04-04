@@ -1,11 +1,6 @@
+* {
+    box-sizing: border-box;
+}
 body {
-    margin: 0;
-    padding: 0;
-    /*
-    background-color: #112;
-    background-image: url('/images/werewolf-background.jpg');
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: top left;
-     */
+
 }

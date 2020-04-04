@@ -3,4 +3,6 @@ dist
 build
 images
 js
+**/css/*.js
+**/css/*.js.map
 .DS_Store

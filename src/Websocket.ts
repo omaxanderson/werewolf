@@ -12,6 +12,7 @@ import {
   WebSocketMessage,
   WebSocketAction,
 } from './IWebsocket';
+import randomInt from './util/randomInt';
 
 interface MyWebSocket extends WebSocket {
   roomId: string;
@@ -130,11 +131,19 @@ export default (server) => {
     // set unique id for client
     ws.playerId = v4();
 
+    // set color
+    ws.color = `#${[
+      randomInt(255).toString(16).padStart(2, '0'),
+      randomInt(255).toString(16).padStart(2, '0'),
+      randomInt(255).toString(16).padStart(2, '0'),
+    ].join('')}`;
+
     // notify room members of a new join
     const clientsInRoom = getClientsInRoom(webSocketServer, ws.roomId);
     const simplifiedClients = clientsInRoom.map((client: MyWebSocket) => ({
       name: client.name,
       color: client.color,
+      playerId: client.playerId,
     }));
     clientsInRoom.forEach(client => client.send(JSON.stringify({
       action: WebSocketAction.PLAYER_JOINED,

@@ -2,6 +2,7 @@ import React from 'react';
 import { Character } from "./Characters";
 import { Room } from './Home';
 import { start } from 'repl';
+import Player from './Player';
 
 export interface GameOptions {
   gameId: string;
@@ -131,12 +132,18 @@ export default class Game extends React.Component<{
   };
 
   render() {
-    const { options } = this.props;
+    const {
+      options,
+      room,
+    } = this.props;
     const { startingCharacter } = options;
     let jsx = this.getGameBody();
     return (
       <>
         {startingCharacter && <div>You are the <strong>{startingCharacter.name}</strong></div>}
+        <div style={{ display: 'flex' }}>
+          {room.players.map(player => <Player name={player.name} color={player.color} />)}
+        </div>
         {jsx}
       </>
     )
