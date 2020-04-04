@@ -91,12 +91,6 @@ export class Home extends React.Component<Store & {
     this.props.dispatch({
       type: ReduxAction.SET_WS_CLIENT,
       payload: client,
-      /*
-      payload: {
-        roomId,
-        name,
-      },
-       */
     });
   };
 
@@ -138,19 +132,16 @@ export class Home extends React.Component<Store & {
 
   getBody = () => {
     const {
-      joined,
-      //room,
-    } = this.state;
-    const {
       gameOptions,
-      client,
       roomId,
       name,
+      client,
     } = this.props;
+
     if (gameOptions) {
       return <Game />;
-    } else if (joined) {
-      return (<Setup /* onGameStart={this.onGameStart} */ />
+    } else if (client) {
+      return (<Setup />
       );
     }
     return (
@@ -168,12 +159,15 @@ export class Home extends React.Component<Store & {
   };
 
   render() {
+    const { client } = this.props;
     return (
       <div>
-        <div>
-          <label htmlFor="name">Name</label>
-          <input type="text" name="name" onChange={this.onNameChange}/>
-        </div>
+        {!client &&
+          <div>
+              <label htmlFor="name">Name</label>
+              <input type="text" name="name" onChange={this.onNameChange}/>
+          </div>
+        }
         {this.getBody()}
       </div>
     )

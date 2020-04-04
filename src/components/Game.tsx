@@ -5,6 +5,8 @@ import { IPlayer, Room } from './Interfaces';
 import Player from './Player';
 import { Store } from './Interfaces';
 import Ribbon from './Ribbon';
+import style from './Game.scss';
+import { start } from 'repl';
 
 function isCharacter(c: Character | any): c is Character {
   return c && ((c as Character).name !== undefined);
@@ -83,10 +85,6 @@ class Game extends React.Component<Store, {
   getGameBody = () => {
     const { gameOptions, gameState } = this.props;
     const { startingCharacter } = gameOptions;
-    const {
-      current,
-      next,
-    } = this.state;
     const ribbonItems: Character[] = [
       {
         name: 'Game will start soon',
@@ -111,7 +109,14 @@ class Game extends React.Component<Store, {
     console.log('ribbonitems', ribbonItems);
 
     // doing this wonky + 1 because we're adding an element to the array
-    return <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />;
+    return (
+      <>
+        Character Order
+        <div className={style.RibbonContainer}>
+          <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
+        </div>
+      </>
+    );
   };
 
   isMyTurn = () => {
@@ -135,10 +140,21 @@ class Game extends React.Component<Store, {
     const { startingCharacter } = gameOptions;
     let jsx = this.getGameBody();
     const isMyTurn = this.isMyTurn();
+    console.log('style', style);
     return (
       <>
-        {startingCharacter && <div>You are the <strong>{startingCharacter.name}</strong></div>}
-        <div style={{ display: 'flex' }}>
+        {startingCharacter &&
+          <div className={style.Me}>
+            <div>You are the
+              {' '}
+              <span className={style.Title}>
+                {startingCharacter.name}
+              </span>
+            </div>
+          </div>
+        }
+        <div>Players</div>
+        <div className={style.PlayerContainer}>
           {players.map(player => (
             <Player
               player={player}

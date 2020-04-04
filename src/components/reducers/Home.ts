@@ -49,6 +49,12 @@ export default (state: Store = initialState, action) => {
         ...state,
         name: payload,
       };
+    case ReduxAction.GAME_IS_STARTING:
+      return {
+        ...state,
+        gameOptions: payload.gameOptions,
+        gameState: payload.gameState,
+      };
     case ReduxAction.START_GAME:
       // send the websocket message
       console.log('starting game', payload);
@@ -56,13 +62,8 @@ export default (state: Store = initialState, action) => {
         config: payload,
         action: WebSocketAction.START_GAME,
       }));
-      break;
-    case ReduxAction.GAME_IS_STARTING:
-      return {
-        ...state,
-        gameOptions: payload.gameOptions,
-        gameState: payload.gameState,
-      };
+      // CAREFUL putting things below here, there's no break on the previous
+      // case because we want the fallthrough
     default:
       return state;
   }
