@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import * as http from "http";
 import parseUrl from "./util/parseUrl";
+import { GameOptions } from './components/Game';
 
 interface MyWebSocket extends WebSocket {
   roomId: string;
@@ -12,15 +13,17 @@ export enum WebSocketAction {
   MESSAGE,
   PLAYER_JOINED,
   LIST_PLAYERS,
+  START_GAME,
   SET_COLOR,
   SET_NAME,
 }
 
 export interface WebSocketMessage {
   action: WebSocketAction;
-  message: string;
   messageId: string;
+  message?: string;
   broadcast?: boolean;
+  config?: GameOptions;
 }
 
 const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
@@ -31,6 +34,27 @@ const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
     }
   });
   return clients;
+};
+
+const START_BUFFER = 5 * 1000;
+
+const setupGame = (config: GameOptions) => {
+  const {
+    characters,
+    secondsPerCharacter,
+  } = config;
+  const now = Date.now();
+  const startTime = now + START_BUFFER;
+  let t = startTime;
+  // put the characters in order and assign them a start time
+  characters.sort((a, b) => a.order - b.order);
+  for (let i = 0; i < characters.length; i++) {
+    if (characters[i].order > 0) {
+      characters[i].startTime = t;
+      t += secondsPerCharacter * 1000;
+    }
+  }
+  config.conferenceStart = t;
 };
 
 /**
@@ -49,23 +73,23 @@ export default (server) => {
       ws.name = name;
     }
     ws.on('message', (json: string) => {
-      console.log(json);
       const m: WebSocketMessage = JSON.parse(json);
-      if (m.broadcast) {
-        webSocketServer.clients
-          .forEach((client: MyWebSocket) => {
-            if (client != ws && client.roomId === ws.roomId) {
-              client.send(JSON.stringify({
-                message: m.messageId,
-                broadcast: true,
-              }));
-            }
-          });
-      } else {
-        ws.send(JSON.stringify({
-          message: `hello you sent: ${m.message}`,
-          messageId: m.messageId,
-        }));
+      const action = m.action;
+      switch (action) {
+        case WebSocketAction.START_GAME:
+          setupGame(m.config);
+          getClientsInRoom(webSocketServer, ws.roomId).forEach(client => client.send(JSON.stringify({
+            action: WebSocketAction.START_GAME,
+            config: m.config,
+          })));
+          break;
+
+        default:
+          ws.send(JSON.stringify({
+            message: `hello you sent: ${m.message}`,
+            messageId: m.messageId,
+          }));
+
       }
     });
 

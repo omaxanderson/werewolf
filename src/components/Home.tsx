@@ -76,8 +76,13 @@ export class Home extends React.Component <{}, {
             const room = cloneDeep(this.state.room);
             room.players = m.players;
             this.setState({ room });
+            break;
+          case WebSocketAction.START_GAME:
+            this.setState({ gameOptions: m.config });
+            break;
+          default:
+            console.log('unhandled message received: ', m);
         }
-        console.log('message received:', m.data);
       }
     };
     this.setState({ client });
@@ -97,8 +102,24 @@ export class Home extends React.Component <{}, {
     this.setState({ joined: true });
   };
 
+  sendWebSocketMessage = (message: {
+    action: WebSocketAction;
+    message?: any;
+    config?: GameOptions;
+  }) => {
+    const { client } = this.state;
+    const messageId = shortId();
+    client.send(JSON.stringify({
+      ...message,
+      messageId,
+    }))
+  };
+
   onGameStart = (gameOptions: GameOptions) => {
-    this.setState({ gameOptions });
+    this.setState({ gameOptions }, () => this.sendWebSocketMessage({
+      action: WebSocketAction.START_GAME,
+      config: gameOptions,
+    }));
   };
 
   getBody = () => {
