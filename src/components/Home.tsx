@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import shortId from '../util/shortId';
 import * as WebSocket from 'websocket';
 import cloneDeep from 'lodash/cloneDeep';
-import { WebSocketAction } from '../websocket';
+import { WebSocketAction } from '../IWebsocket';
 import Setup from './Setup';
 import Game, { GameOptions } from './Game';
 

@@ -6,7 +6,7 @@ import logger from 'morgan';
 import sassMiddleware from 'node-sass-middleware';
 import * as http from 'http';
 
-import setupWebSocketServer from './websocket';
+import setupWebSocketServer from './Websocket';
 import indexRouter from './routes';
 
 const debug = require('debug')('untitled:server');

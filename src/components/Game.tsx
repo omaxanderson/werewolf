@@ -4,6 +4,7 @@ import { Room } from './Home';
 import { start } from 'repl';
 
 export interface GameOptions {
+  gameId: string;
   characters: Character[];
   originalCharacters: Character[];
   secondsPerCharacter: number;

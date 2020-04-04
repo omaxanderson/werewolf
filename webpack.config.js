@@ -41,24 +41,6 @@ module.exports = {
                 test: /\.pug$/,
                 use: ['pug-loader'],
             },
-            /*
-            {
-                test: /\.html$/,
-                use: [
-                    {
-                        loader: "html-loader"
-                    },
-                ],
-            },
-             */
         ],
     },
-    /*
-    plugins: [
-        new HtmlWebPackPlugin({
-            template: "./src/components/index.html",
-            filename: "./index.html"
-        }),
-    ],
-     */
 };
