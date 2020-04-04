@@ -1,11 +1,14 @@
 import React from 'react';
 import { Character } from "./Characters";
 import { Room } from './Home';
+import { start } from 'repl';
 
 export interface GameOptions {
   characters: Character[];
+  originalCharacters: Character[];
   secondsPerCharacter: number;
   secondsToConference: number;
+  startingCharacter: Character;
   conferenceStart?: number;
 }
 
@@ -84,8 +87,9 @@ export default class Game extends React.Component<{
     });
   };
 
-  render() {
+  getGameBody = () => {
     const { options } = this.props;
+    const { startingCharacter } = options;
     const {
       current,
       next,
@@ -106,7 +110,7 @@ export default class Game extends React.Component<{
     if (isCharacter(current)) {
       return (
         <>
-          <div>Currently going: {current.name}</div>
+          <div>Currently going: {current.name === startingCharacter.name ? 'You!' : current.name}</div>
           {isCharacter(next) && <div>Next up: {next.name}</div>}
         </>
       );
@@ -123,5 +127,17 @@ export default class Game extends React.Component<{
     }
 
     return <div>Game starting soon</div>;
+  };
+
+  render() {
+    const { options } = this.props;
+    const { startingCharacter } = options;
+    let jsx = this.getGameBody();
+    return (
+      <>
+        {startingCharacter && <div>You are the <strong>{startingCharacter.name}</strong></div>}
+        {jsx}
+      </>
+    )
   }
 }

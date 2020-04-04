@@ -116,6 +116,7 @@ export class Home extends React.Component <{}, {
   };
 
   onGameStart = (gameOptions: GameOptions) => {
+    console.log('ga', gameOptions);
     this.setState({ gameOptions }, () => this.sendWebSocketMessage({
       action: WebSocketAction.START_GAME,
       config: gameOptions,

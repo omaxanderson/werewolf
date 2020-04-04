@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import * as http from "http";
 import flatten from 'lodash/flatten';
+import shuffle from 'lodash/shuffle';
 import parseUrl from "./util/parseUrl";
 import { GameOptions } from './components/Game';
 
@@ -63,6 +64,7 @@ const setupGame = (config: GameOptions) => {
       t += secondsPerCharacter * 1000;
     }
   }
+  config.originalCharacters = charactersConfig;
   config.characters = characters;
   config.conferenceStart = t;
 };
@@ -88,10 +90,16 @@ export default (server) => {
       switch (action) {
         case WebSocketAction.START_GAME:
           setupGame(m.config);
-          getClientsInRoom(webSocketServer, ws.roomId).forEach(client => client.send(JSON.stringify({
-            action: WebSocketAction.START_GAME,
-            config: m.config,
-          })));
+          const shuffled = shuffle(m.config.originalCharacters);
+          getClientsInRoom(webSocketServer, ws.roomId).forEach(client => {
+            client.send(JSON.stringify({
+              action: WebSocketAction.START_GAME,
+              config: {
+                ...m.config,
+                startingCharacter: shuffled.pop(),
+              },
+            }));
+          });
           break;
 
         default:
