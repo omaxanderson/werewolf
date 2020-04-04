@@ -3,10 +3,12 @@ import * as WebSocket from 'websocket';
 import cloneDeep from 'lodash/cloneDeep';
 import { Room } from "./Home";
 import C, { Character, Team } from './Characters';
+import { GameOptions } from "./Game";
 
 export default class Setup extends React.Component<{
   room: Room;
   client: WebSocket.w3cwebsocket;
+  onGameStart: (GameOptions) => void;
 }, {
   timePerCharacter: string;
   timeToConference: string;
@@ -23,11 +25,31 @@ export default class Setup extends React.Component<{
   }
 
   changeTimePerCharacter = (e) => {
-    this.setState({ timePerCharacter: e.target.value });
+    const { value } = e.target;
+    if (value !== '' && isNaN(parseInt(value))) {
+      return;
+    }
+    this.setState({ timePerCharacter: value });
   };
 
   changeTimeToConference = (e) => {
+    const { value } = e.target;
+    if (value !== '' && this.parseTime(value) === 0) {
+      return;
+    }
     this.setState({ timeToConference: e.target.value });
+  };
+
+  parseTime = (time: string): number => {
+    const regex = /^[\d]{1,2}:[\d]{0,2}$/;
+    if (!regex.test(time) && isNaN(parseInt(time))) {
+      return 0;
+    }
+    if (/^[\d]{1,2}:[\d]{2}$/.test(time)) {
+      const [minutes, seconds] = time.split(':');
+      return parseInt(seconds) + (60 * parseInt(minutes));
+    }
+    return parseInt(time);
   };
 
   overCharacterLimit = () => {
@@ -35,12 +57,10 @@ export default class Setup extends React.Component<{
     return (this.state.characters.length + 3) > numPlayers;
   };
 
-  validateCharacters = (): string | boolean => {
+  validate = (): string | boolean => {
     const {
       characters,
     } = this.state;
-    console.log(this.getNumPlayers());
-    console.log(this.props.room.players.length);
     if (!this.hasRightNumberPlayers()) {
       return 'Incorrect number of characters';
     }
@@ -49,6 +69,12 @@ export default class Setup extends React.Component<{
     }
     if (!characters.some(c => c.team === Team.VILLAGER)) {
       return 'No Villagers';
+    }
+    if (!this.parseTime(this.state.timeToConference)) {
+      return 'Invalid time to conference';
+    }
+    if (!this.parseTime(this.state.timePerCharacter)) {
+      return 'Invalid time per character';
     }
     return false;
   };
@@ -72,11 +98,22 @@ export default class Setup extends React.Component<{
   };
 
   startGame = () => {
-    const message = this.validateCharacters();
+    const message = this.validate();
     if (typeof message === 'string') {
       alert(`Error: ${message}`);
+      return;
     }
-    console.log('starting game');
+    const { onGameStart } = this.props;
+    const {
+      characters,
+      timeToConference,
+      timePerCharacter,
+    } = this.state;
+    onGameStart({
+      characters,
+      secondsToConference: this.parseTime(timeToConference),
+      secondsPerCharacter: this.parseTime(timePerCharacter),
+    });
   };
 
   render() {
@@ -98,7 +135,7 @@ export default class Setup extends React.Component<{
         </div>
         <br />
         <div>
-          <label htmlFor="characterTime">Time per Character: </label>
+          <label htmlFor="characterTime">Seconds per Character: </label>
           <input type="text" name="characterTime" onChange={this.changeTimePerCharacter} value={timePerCharacter} />
         </div>
         <div>
