@@ -1,5 +1,6 @@
 import WebSocket from "ws";
 import * as http from "http";
+import flatten from 'lodash/flatten';
 import parseUrl from "./util/parseUrl";
 import { GameOptions } from './components/Game';
 
@@ -40,9 +41,17 @@ const START_BUFFER = 5 * 1000;
 
 const setupGame = (config: GameOptions) => {
   const {
-    characters,
+    characters: charactersConfig,
     secondsPerCharacter,
   } = config;
+  const hasDoppelganger = charactersConfig.some(c => c.key === 'doppelganger');
+  const characters = flatten(charactersConfig.map(c => {
+    return c.doppel && hasDoppelganger ? [c, {
+      ...c,
+      name: `Doppelganger ${c.name}`,
+      order: c.order + 1,
+    }] : c;
+  }));
   const now = Date.now();
   const startTime = now + START_BUFFER;
   let t = startTime;
@@ -54,6 +63,7 @@ const setupGame = (config: GameOptions) => {
       t += secondsPerCharacter * 1000;
     }
   }
+  config.characters = characters;
   config.conferenceStart = t;
 };
 
