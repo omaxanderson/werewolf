@@ -1,0 +1,14 @@
+.RibbonContainer {
+  display: flex; }
+
+.RibbonItem, .RibbonItem--active {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center; }
+  .RibbonItem--active {
+    border: 2px solid #10aafa; }
+
+
+/*# sourceMappingURL=Ribbon.css.map*/

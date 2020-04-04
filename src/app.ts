@@ -8,6 +8,7 @@ import * as http from 'http';
 
 import setupWebSocketServer from './Websocket';
 import indexRouter from './routes';
+import debugRouter from './routes/debug';
 
 const debug = require('debug')('untitled:server');
 
@@ -30,6 +31,7 @@ app.use(sassMiddleware({
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/debug', debugRouter);
 // app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler

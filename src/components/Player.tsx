@@ -4,18 +4,21 @@ import { IPlayer } from './Interfaces';
 
 export default class Player extends React.PureComponent<{
   player: IPlayer;
-  onPlayerClick?: () => void;
+  onPlayerClick?: (IPlayer) => void;
 }, {}> {
   render() {
     const {
-      player: { color, name },
+      player,
       onPlayerClick,
     } = this.props;
-    console.log('style', style);
+    const {
+      color,
+      name,
+    } = player;
     /* <div style={{ height: '100px', width: '100px', backgroundColor: color }}> */
     return (
       <div
-        onClick={() => onPlayerClick()}
+        onClick={() => onPlayerClick(player)}
         className={style.Player}
         style={{ backgroundColor: color }}
       >

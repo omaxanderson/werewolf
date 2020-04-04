@@ -1,14 +1,10 @@
 import React from 'react';
-import * as WebSocket from 'websocket';
 import cloneDeep from 'lodash/cloneDeep';
+import { connect } from 'react-redux';
 import C, { Character, Team } from './Characters';
-import { Room } from './Interfaces';
+import { ReduxAction, Store } from './Interfaces';
 
-export default class Setup extends React.Component<{
-  room: Room;
-  client: WebSocket.w3cwebsocket;
-  onGameStart: (GameOptions) => void;
-}, {
+class Setup extends React.Component<Store & { onGameStart }, {
   timePerCharacter: string;
   timeToConference: string;
   characters: Character[];
@@ -51,11 +47,6 @@ export default class Setup extends React.Component<{
     return parseInt(time);
   };
 
-  overCharacterLimit = () => {
-    const numPlayers = this.props.room?.players?.length;
-    return (this.state.characters.length + 3) > numPlayers;
-  };
-
   validate = (): string | boolean => {
     const {
       characters,
@@ -78,7 +69,7 @@ export default class Setup extends React.Component<{
     return false;
   };
 
-  hasRightNumberPlayers = () => this.getNumPlayers() === this.props.room.players.length;
+  hasRightNumberPlayers = () => this.getNumPlayers() === this.props.players.length;
 
   getNumPlayers = () => this.state.characters.length <= 3 ? 0 : this.state.characters.length - 3;
 
@@ -102,23 +93,41 @@ export default class Setup extends React.Component<{
       alert(`Error: ${message}`);
       return;
     }
-    const { onGameStart } = this.props;
+    // const { onGameStart } = this.props;
+    // const { client } = this.props;
     const {
       characters,
       timeToConference,
       timePerCharacter,
     } = this.state;
+    this.props.dispatch({
+      type: ReduxAction.START_GAME,
+      payload: {
+        characters,
+        secondsToConference: this.parseTime(timeToConference),
+        secondsPerCharacter: this.parseTime(timePerCharacter),
+      },
+    });
+    /*
+    client.send(JSON.stringify({
+      characters,
+      secondsToConference: this.parseTime(timeToConference),
+      secondsPerCharacter: this.parseTime(timePerCharacter),
+    }));
+     */
+    /*
     onGameStart({
       characters,
       secondsToConference: this.parseTime(timeToConference),
       secondsPerCharacter: this.parseTime(timePerCharacter),
     });
+     */
   };
 
   render() {
     // cards, time per character, time to confer
     const {
-      room,
+      players
     } = this.props;
     const {
       timePerCharacter,
@@ -130,7 +139,7 @@ export default class Setup extends React.Component<{
           Room Members:
         </div>
         <div>
-          {room.players.map(p => <div>{p.name}</div>)}
+          {players.map(p => <div>{p.name}</div>)}
         </div>
         <br />
         <div>
@@ -160,3 +169,12 @@ export default class Setup extends React.Component<{
     );
   }
 }
+
+function mapStateToProps(state, ownProps) {
+  return {
+    ...state,
+    ...ownProps,
+  };
+}
+
+export default connect(mapStateToProps)(Setup);

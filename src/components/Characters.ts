@@ -6,6 +6,7 @@ export interface Character {
   doppel: boolean;
   directions?: string;
   startTime?: number; // timestamp to determine when the character should begin
+  color?: string;
 }
 
 export enum Team {
@@ -24,7 +25,8 @@ const characters: Character[] = [
     order: 1,
     doppel: false,
     directions: `Doppelganger, wake up and select another players card. You are now that role. If you viewed the 
-    Robber or Troublemaker, do that action now.`
+    Robber or Troublemaker, do that action now.`,
+    color: '#9FC5E4',
   },
   {
     name: 'Mystic Wolf',
@@ -33,6 +35,7 @@ const characters: Character[] = [
     order: 10,
     doppel: true,
     directions: `You may view another player's card.`,
+    color: '#CF9FE4',
   },
   {
     name: 'Werewolf',
@@ -41,6 +44,7 @@ const characters: Character[] = [
     order: 20,
     doppel: true,
     directions: `If there is only one Werewolf, you may look at a card from the center.`,
+    color: '#ACAEB0',
   },
   {
     name: 'Werewolf',
@@ -49,6 +53,7 @@ const characters: Character[] = [
     order: 20,
     doppel: true,
     directions: `If there is only one Werewolf, you may look at a card from the center.`,
+    color: '#ACAEB0',
   },
   {
     name: 'Minion',
@@ -57,6 +62,7 @@ const characters: Character[] = [
     order: 30,
     doppel: true,
     directions: `You may now see the other werewolves`,
+    color: '#E3E0C0',
   },
   {
     name: 'Mason',
@@ -65,6 +71,7 @@ const characters: Character[] = [
     order: 40,
     doppel: false,
     directions: `Wake up and view the other mason.`,
+    color: '#92B356',
   },
   {
     name: 'Mason',
@@ -73,6 +80,7 @@ const characters: Character[] = [
     order: 40,
     doppel: false,
     directions: `Wake up and view the other mason.`,
+    color: '#92B356',
   },
   {
     name: 'Seer',
@@ -80,7 +88,8 @@ const characters: Character[] = [
     team: Team.VILLAGER,
     order: 50,
     doppel: true,
-    directions: `You may view another player's card, or two from the center.`
+    directions: `You may view another player's card, or two from the center.`,
+    color: '#BBFBAD',
   },
   {
     name: 'Robber',
@@ -89,6 +98,7 @@ const characters: Character[] = [
     order: 60,
     doppel: true,
     directions: `You may exchange your card with another players card. Then, view that card.`,
+    color: '#949494',
   },
   {
     name: 'Troublemaker',
@@ -97,6 +107,7 @@ const characters: Character[] = [
     order: 70,
     doppel: true,
     directions: `You may switch two other players cards.`,
+    color: '#F68F8F',
   },
   {
     name: 'Drunk',
@@ -105,6 +116,7 @@ const characters: Character[] = [
     order: 80,
     doppel: true,
     directions: `Exchange your card with a card from the center.`,
+    color: '#EDDEDE',
   },
   {
     name: 'Insomniac',
@@ -112,7 +124,8 @@ const characters: Character[] = [
     team: Team.VILLAGER,
     order: 90,
     doppel: true,
-    directions: `View your card.`
+    directions: `View your card.`,
+    color: '#D5C49B',
   },
   {
     name: 'Hunter',
@@ -120,6 +133,7 @@ const characters: Character[] = [
     team: Team.VILLAGER,
     order: -1,
     doppel: false,
+    color: '#F4A151',
   },
   {
     name: 'Tanner',
@@ -127,6 +141,7 @@ const characters: Character[] = [
     team: Team.SELF,
     order: -1,
     doppel: false,
+    color: '#CF9FE4',
   },
   {
     name: 'Villager',
@@ -134,6 +149,7 @@ const characters: Character[] = [
     team: Team.VILLAGER,
     order: -1,
     doppel: false,
+    color: '#EC9A42',
   },
 ];
 

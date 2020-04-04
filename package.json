@@ -31,6 +31,9 @@
     "pug": "^2.0.4",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-redux": "^7.2.0",
+    "redux": "^4.0.5",
+    "redux-devtools-extension": "^2.13.8",
     "uuid": "^7.0.3",
     "websocket": "^1.0.31",
     "ws": "^7.2.3"

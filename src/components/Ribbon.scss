@@ -1,0 +1,16 @@
+.RibbonContainer {
+  display: flex;
+}
+
+.RibbonItem {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  &--active {
+    @extend .RibbonItem;
+    border: 2px solid #10aafa;
+  }
+}

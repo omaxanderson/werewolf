@@ -2,12 +2,21 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import shortId from '../util/shortId';
 import * as WebSocket from 'websocket';
-import cloneDeep from 'lodash/cloneDeep';
+import { connect, Provider } from 'react-redux';
+import { applyMiddleware, createStore } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension';
 import { WebSocketAction } from '../IWebsocket';
 import Setup from './Setup';
 import Game from './Game';
-import { GameOptions } from './Interfaces';
-import { Room } from './Interfaces';
+import {
+  DispatchObject,
+  GameOptions,
+  Store,
+  ReduxAction,
+} from './Interfaces';
+
+'./Interfaces';
+import reducer from './reducers/Home';
 
 const WebSocketClient = WebSocket.w3cwebsocket;
 
@@ -17,45 +26,36 @@ declare global {
   }
 }
 
-export class Home extends React.Component <{}, {
-  roomId: string;
-  name: string;
+export class Home extends React.Component<Store & {
+  dispatch: (obj: DispatchObject) => void;
+}, {
   joined: boolean;
-  client: WebSocket.w3cwebsocket;
-  room: Room;
-  gameOptions: GameOptions,
 }> {
   constructor(props) {
     super(props);
 
     const roomId = window.location.pathname.slice(1);
     this.state = {
-      roomId: roomId || '',
-      name: '',
       joined: false,
-      client: null,
-      room: {
-        players: [],
-      },
-      gameOptions: null,
     }
   }
 
   // debugging purposes, delete before use
-  componentDidMount()
-    :
-    void {
-    this.setState({ name: 'max' }, () => {
-      this.connectToWebsocket();
-      this.setState({ joined: true });
-    });
+  componentDidMount(): void {
+    const roomId = window.location.pathname.slice(1);
+    if (roomId) {
+      this.props.dispatch({
+        type: ReduxAction.SET_ROOM_ID,
+        payload: roomId,
+      });
+    }
   }
 
   connectToWebsocket = (): void => {
     const {
       name,
       roomId,
-    } = this.state;
+    } = this.props;
     const client = new WebSocketClient(`ws://localhost:3000?id=${roomId}&name=${name}`, 'echo-protocol');
     client.onerror = (e) => console.error(e);
     client.onopen = () => console.log('connected to websocket');
@@ -66,28 +66,56 @@ export class Home extends React.Component <{}, {
         switch (m.action) {
           case WebSocketAction.PLAYER_JOINED:
           case WebSocketAction.LIST_PLAYERS:
-            const room = cloneDeep(this.state.room);
-            room.players = m.players;
-            this.setState({ room });
+            this.props.dispatch({
+              type: ReduxAction.LIST_PLAYERS,
+              payload: m.players,
+            });
             break;
           case WebSocketAction.START_GAME:
-            this.setState({ gameOptions: m.config });
+            this.props.dispatch({
+              type: ReduxAction.GAME_IS_STARTING,
+              payload: m,
+            });
+            break;
+          case WebSocketAction.NEXT_CHARACTER:
+            this.props.dispatch({
+              type: ReduxAction.UPDATE_GAME_STATE,
+              payload: m,
+            });
             break;
           default:
             console.log('unhandled message received: ', m);
         }
       }
     };
-    this.setState({ client });
+    this.props.dispatch({
+      type: ReduxAction.SET_WS_CLIENT,
+      payload: client,
+      /*
+      payload: {
+        roomId,
+        name,
+      },
+       */
+    });
   };
 
   onNameChange = (e) => {
-    this.setState({ name: e.target.value });
+    // this.setState({ name: e.target.value });
+    this.props.dispatch({
+      type: ReduxAction.SET_NAME,
+      payload: e.target.value,
+    })
   };
 
   createNewGame = () => {
     const roomId = shortId();
-    this.setState({ roomId }, () => window.history.pushState({}, '', roomId));
+    // this.setState({ roomId }, () => window.history.pushState({}, '', roomId));
+    window.history.pushState({}, '', roomId);
+    this.props.dispatch({
+      type: ReduxAction.SET_ROOM_ID,
+      payload: roomId,
+    })
   };
 
   joinGame = () => {
@@ -100,7 +128,7 @@ export class Home extends React.Component <{}, {
     message?: any;
     config?: GameOptions;
   }) => {
-    const { client } = this.state;
+    const { client } = this.props;
     const messageId = shortId();
     client.send(JSON.stringify({
       ...message,
@@ -108,30 +136,21 @@ export class Home extends React.Component <{}, {
     }))
   };
 
-  onGameStart = (gameOptions: GameOptions) => {
-    console.log('ga', gameOptions);
-    this.setState({ gameOptions }, () => this.sendWebSocketMessage({
-      action: WebSocketAction.START_GAME,
-      config: gameOptions,
-    }));
-  };
-
   getBody = () => {
     const {
       joined,
+      //room,
+    } = this.state;
+    const {
       gameOptions,
       client,
-      room,
       roomId,
-    } = this.state;
+      name,
+    } = this.props;
     if (gameOptions) {
-      return <Game options={gameOptions} room={room} />;
+      return <Game />;
     } else if (joined) {
-      return (<Setup
-          room={room}
-          client={client}
-          onGameStart={this.onGameStart}
-        />
+      return (<Setup /* onGameStart={this.onGameStart} */ />
       );
     }
     return (
@@ -161,7 +180,15 @@ export class Home extends React.Component <{}, {
   }
 }
 
+const store = createStore(reducer, composeWithDevTools(applyMiddleware()));
+const HomeWithStore = connect(state => state)(Home);
+const ReduxWrapper = (
+  <Provider store={store}>
+    <HomeWithStore />
+  </Provider>
+);
+
 ReactDOM.render(
-  <Home/>,
+  ReduxWrapper,
   document.getElementById('root'),
 );

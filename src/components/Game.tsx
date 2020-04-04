@@ -1,8 +1,10 @@
 import React from 'react';
-import { Character } from "./Characters";
-import { Room } from './Interfaces';
+import { connect } from 'react-redux';
+import { Character, Team } from "./Characters";
+import { IPlayer, Room } from './Interfaces';
 import Player from './Player';
-import { GameOptions } from './Interfaces';
+import { Store } from './Interfaces';
+import Ribbon from './Ribbon';
 
 function isCharacter(c: Character | any): c is Character {
   return c && ((c as Character).name !== undefined);
@@ -12,10 +14,7 @@ type Phase = Character | 'conference';
 
 const INTERVAL = 1000;
 
-export default class Game extends React.Component<{
-  options: GameOptions;
-  room: Room;
-}, {
+class Game extends React.Component<Store, {
   current: Phase;
   next: Phase;
 }> {
@@ -30,17 +29,19 @@ export default class Game extends React.Component<{
   }
 
   componentDidMount(): void {
+    /*
     this.getPositionInGame();
     this.interval = setInterval(this.getPositionInGame, INTERVAL);
+     */
   }
 
   getPositionInGame = () => {
-    const { options } = this.props;
+    const { gameOptions } = this.props;
     const {
       characters,
       conferenceStart,
       secondsToConference,
-    } = options;
+    } = gameOptions;
     const charactersToPlay = characters.filter(c => c.startTime);
     const now = Date.now();
     if (!conferenceStart || !charactersToPlay[0]?.startTime) {
@@ -80,62 +81,75 @@ export default class Game extends React.Component<{
   };
 
   getGameBody = () => {
-    const { options } = this.props;
-    const { startingCharacter } = options;
+    const { gameOptions, gameState } = this.props;
+    const { startingCharacter } = gameOptions;
     const {
       current,
       next,
     } = this.state;
-    const now = Date.now();
-    const conferenceEnd = options.conferenceStart + (options.secondsToConference * 1000);
-    // case 1, we have no game data
-    if (!current && !next && !options.conferenceStart) {
-      return <div>Game starting soon</div>;
-    }
+    const ribbonItems: Character[] = [
+      {
+        name: 'Game will start soon',
+        key: 'pregame',
+        team: Team.UNKNOWN,
+        order: -1000,
+        doppel: false,
+        directions: 'Game will start soon.',
+        color: 'white',
+      },
+      ...gameOptions.characters,
+      {
+        name: 'Daylight!',
+        key: 'postgame',
+        team: Team.UNKNOWN,
+        order: Number.MAX_SAFE_INTEGER,
+        doppel: false,
+        directions: 'Find the werewolves!',
+        color: 'white',
+      },
+    ];
+    console.log('ribbonitems', ribbonItems);
 
-    // case 2 game hasn't started yet
-    if (isCharacter(next) && !current) {
-      return <div>Game starting in {(next.startTime - now) / 1000}s</div>
-    }
+    // doing this wonky + 1 because we're adding an element to the array
+    return <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />;
+  };
 
-    // case 3 in game
-    if (isCharacter(current)) {
-      return (
-        <>
-          <div>Currently going: {current.name === startingCharacter.name ? 'You!' : current.name}</div>
-          {isCharacter(next) && <div>Next up: {next.name}</div>}
-        </>
-      );
-    }
+  isMyTurn = () => {
+    const {
+      gameOptions,
+    } = this.props;
+    const { current } = this.state;
+    const { startingCharacter } = gameOptions;
+    return isCharacter(current) && current.name === startingCharacter.name;
+  };
 
-    // case 4 in conference
-    if (current === 'conference') {
-      return <div>talk it out boys: {(conferenceEnd - now) / 1000}s</div>
-    }
-
-    // case 5 after conference
-    if (now > conferenceEnd) {
-      return <div>we done</div>;
-    }
-
-    return <div>Game starting soon</div>;
+  onPlayerClick = (player: IPlayer) => {
+    console.log('clicked on', player);
   };
 
   render() {
     const {
-      options,
-      room,
+      gameOptions,
+      players,
     } = this.props;
-    const { startingCharacter } = options;
+    const { startingCharacter } = gameOptions;
     let jsx = this.getGameBody();
+    const isMyTurn = this.isMyTurn();
     return (
       <>
         {startingCharacter && <div>You are the <strong>{startingCharacter.name}</strong></div>}
         <div style={{ display: 'flex' }}>
-          {room.players.map(player => <Player player={player} />)}
+          {players.map(player => (
+            <Player
+              player={player}
+              onPlayerClick={isMyTurn ? this.onPlayerClick : () => {}}
+            />
+          ))}
         </div>
         {jsx}
       </>
     )
   }
 }
+
+export default connect(state => state)(Game);
