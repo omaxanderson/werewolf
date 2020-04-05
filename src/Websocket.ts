@@ -11,7 +11,7 @@ import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
 
-interface MyWebSocket extends WebSocket {
+export interface MyWebSocket extends WebSocket {
   roomId: string;
   gameId: string;
   playerId: string;
@@ -34,13 +34,21 @@ const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
 const START_BUFFER = 5 * 1000;
 
 const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: string) => {
-  const config: GameState = JSON.parse(await Redis.get(`game-${gameId}`));
-  config.currentIdx += 1;
-  await Redis.set(`game-${gameId}`, JSON.stringify(config));
-  getClientsInRoom(wss, roomId).forEach(client => client.send(JSON.stringify({
-    action: WebSocketAction.NEXT_CHARACTER,
-    gameState: config,
-  })))
+  const state: GameState = JSON.parse(await Redis.get(`game-${gameId}`));
+  const config: GameOptions = JSON.parse(await Redis.get(`config-${gameId}`));
+  const characters: { [key: string]: Character } = JSON.parse(await Redis.get(`characters-${gameId}`));
+  state.currentIdx += 1;
+  await Redis.set(`game-${gameId}`, JSON.stringify(state));
+  const currentCharacter = config.characters[state.currentIdx];
+  // need to send special configs depending on each character
+  getClientsInRoom(wss, roomId).forEach(client => {
+    const character = client.character;
+    console.log('has a char?', character);
+    client.send(JSON.stringify({
+      action: WebSocketAction.NEXT_CHARACTER,
+      gameState: state,
+    }));
+  });
 };
 
 /**
@@ -62,30 +70,22 @@ const setupGame = async (config: GameOptions, roomId: string, wss: WebSocket.Ser
       name: `Doppelganger ${c.name}`,
       order: c.order + 1,
     }] : c;
-  }));
+  })).filter((c: Character) => c.order > 0);
 
-  const now = Date.now();
-  let t = now + START_BUFFER;
-  // put the characters in order and assign them a start time
+  // put the characters in order
   characters.sort((a, b) => a.order - b.order);
-  for (let i = 0; i < characters.length; i++) {
-    if (characters[i].order > 0) {
-      characters[i].startTime = t;
-      // setTimeout to send the next message
-      /*
-      setTimeout(() => {
-        nextCharacterTurn(wss, roomId, characters[i]);
-      }, t - now);
-       */
-      t += secondsPerCharacter * 1000;
-    }
-  }
+
   config.originalCharacters = charactersConfig;
   config.characters = characters;
-  config.conferenceStart = t;
+  // config.conferenceStart = t;
+
   const gameId = `${roomId}-${shortId()}`;
   config.gameId = gameId;
+
+  // set the gameid for each client in the room
   getClientsInRoom(wss, roomId).forEach(client => client.gameId = gameId);
+
+  // store game config and state
   try {
     await Redis.set(`config-${gameId}`, JSON.stringify(config));
     await Redis.set(`game-${gameId}`, JSON.stringify({
@@ -117,8 +117,13 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
       },
     }));
   });
+  // shuffled has the remaining three items
+  // what the fuck do we do with them??
   try {
-    await Redis.set(`characters-${m.config.gameId}`, JSON.stringify(characterMap));
+    await Redis.set(`characters-${m.config.gameId}`, JSON.stringify({
+      characterMap,
+      middleCards: shuffled,
+    }));
   } catch (e) {
     console.error(`Redis Error: ${e}`);
   }

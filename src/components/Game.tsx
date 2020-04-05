@@ -8,10 +8,6 @@ import Ribbon from './Ribbon';
 import style from './Game.scss';
 import { start } from 'repl';
 
-function isCharacter(c: Character | any): c is Character {
-  return c && ((c as Character).name !== undefined);
-}
-
 type Phase = Character | 'conference';
 
 const INTERVAL = 1000;
@@ -106,7 +102,6 @@ class Game extends React.Component<Store, {
         color: 'white',
       },
     ];
-    console.log('ribbonitems', ribbonItems);
 
     // doing this wonky + 1 because we're adding an element to the array
     return (
@@ -115,17 +110,26 @@ class Game extends React.Component<Store, {
         <div className={style.RibbonContainer}>
           <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
         </div>
+        Middle Cards
+        <div className={style.RibbonContainer}>
+          <Ribbon characters={[
+            { name: 'Middle Card', color: '#ACAEB0' },
+            { name: 'Middle Card', color: '#ACAEB0' },
+            { name: 'Middle Card', color: '#ACAEB0' },
+          ]} idx={-1} />
+        </div>
       </>
     );
   };
 
-  isMyTurn = () => {
+  isMyTurn = (): boolean => {
     const {
       gameOptions,
+      gameState,
     } = this.props;
-    const { current } = this.state;
-    const { startingCharacter } = gameOptions;
-    return isCharacter(current) && current.name === startingCharacter.name;
+    const current = gameOptions?.characters[gameState.currentIdx];
+    const me = gameOptions?.startingCharacter;
+    return Boolean(current && (current.name === me?.name));
   };
 
   onPlayerClick = (player: IPlayer) => {
@@ -140,7 +144,6 @@ class Game extends React.Component<Store, {
     const { startingCharacter } = gameOptions;
     let jsx = this.getGameBody();
     const isMyTurn = this.isMyTurn();
-    console.log('style', style);
     return (
       <>
         {startingCharacter &&

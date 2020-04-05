@@ -13,4 +13,8 @@
     @extend .RibbonItem;
     border: 2px solid #10aafa;
   }
+
+  & + .RibbonItem {
+    margin-left: 10px;
+  }
 }

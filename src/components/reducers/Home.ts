@@ -18,7 +18,6 @@ export default (state: Store = initialState, action) => {
   } = action;
   switch (type) {
     case ReduxAction.UPDATE_GAME_STATE:
-      console.log('setting game state');
       return {
         ...state,
         gameState: payload.gameState,

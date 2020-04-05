@@ -1,6 +1,10 @@
 import { Character } from './Characters';
 import * as WebSocket from 'websocket';
 
+export function isCharacter(c: Character | any): c is Character {
+  return c && ((c as Character).name !== undefined);
+}
+
 export interface DispatchObject {
   type: ReduxAction;
   payload: any;

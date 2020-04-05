@@ -2,8 +2,14 @@ import React from 'react';
 import { Character } from './Characters';
 import style from './Ribbon.scss';
 
+type RibbonItem = Pick<
+  Character,
+  'color' |
+  'name'
+  >;
+
 class Ribbon extends React.Component<{
-  characters: Character[];
+  characters: RibbonItem[];
   idx: number;
 }, {}> {
   render() {

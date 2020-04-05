@@ -9,6 +9,8 @@
   align-items: center; }
   .RibbonItem--active {
     border: 2px solid #10aafa; }
+  .RibbonItem + .RibbonItem, .RibbonItem--active + .RibbonItem, .RibbonItem + .RibbonItem--active, .RibbonItem--active + .RibbonItem--active {
+    margin-left: 10px; }
 
 
 /*# sourceMappingURL=Ribbon.css.map*/
