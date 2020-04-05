@@ -5,12 +5,12 @@ import shuffle from 'lodash/shuffle';
 import { v4 } from 'uuid';
 import Redis from './Redis';
 import parseUrl from "./util/parseUrl";
-import { GameOptions, GameState } from './components/Interfaces';
+import { CharacterActionParams, GameOptions, GameState } from './components/Interfaces';
 import { Character } from './components/Characters';
 import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
-import { getCharacterTurnInfo } from './CharacterLogic';
+import { getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
 import { ICharacterExtraData } from './components/Interfaces';
 
 export interface MyWebSocket extends WebSocket {
@@ -21,6 +21,7 @@ export interface MyWebSocket extends WebSocket {
   color: string;
   character: Character;
   startingCharacter: Character;
+  actionTaken: string;
 }
 
 const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
@@ -111,6 +112,18 @@ const setupGame = async (config: GameOptions, roomId: string, wss: WebSocket.Ser
 const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m: WebSocketMessage) => {
   await setupGame(m.config, ws.roomId, webSocketServer);
   const shuffled = shuffle(m.config.originalCharacters);
+
+  // TODO DEBUGGING ONLY
+  shuffled.sort((a, b) => {
+    const c = 'Troublemaker';
+    if (a.name === c) {
+      return 1;
+    }
+    return -1;
+  });
+  // shuffled.splice(0, 0, shuffled.pop());
+  // TODO END DEBUGGING
+
   const characterMap: { [key: string]: Character } = {};
   getClientsInRoom(webSocketServer, ws.roomId).forEach(client => {
     const character = shuffled.pop();
@@ -129,8 +142,6 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
       },
     }));
   });
-  // shuffled has the remaining three items
-  // what the fuck do we do with them??
   try {
     await Redis.set(`characters-${m.config.gameId}`, JSON.stringify({
       characterMap,
@@ -167,7 +178,28 @@ export default (server) => {
           await nextCharacterTurn(webSocketServer, ws.roomId, ws.gameId);
           break;
         case WebSocketAction.CHARACTER_ACTION:
-          console.log('do the thing');
+          if (ws?.actionTaken === ws.gameId) {
+            break;
+          }
+          const redisData = await Redis.get(`characters-${ws.gameId}`);
+          const { middleCards } = JSON.parse(redisData);
+          const actionResult = handleCharacterActions(
+            getClientsInRoom(webSocketServer, ws.roomId),
+            ws,
+            (m as unknown as { params: CharacterActionParams }).params,
+            middleCards,
+          );
+          // fuck yeah
+          getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
+            console.log('name');
+            console.log('started', c.startingCharacter.name);
+            console.log('current', c.character.name);
+          });
+          ws.actionTaken = ws.gameId;
+          ws.send(JSON.stringify({
+            action: WebSocketAction.ACTION_RESULT,
+            result: actionResult,
+          }));
           break;
         default:
           ws.send(JSON.stringify({
@@ -211,7 +243,10 @@ export default (server) => {
     ws.send(JSON.stringify({
       action: WebSocketAction.LIST_PLAYERS,
       players: simplifiedClients,
-      playerId: ws.playerId,
     }));
+    ws.send(JSON.stringify({
+      action: WebSocketAction.SEND_PLAYER_ID,
+      playerId: ws.playerId,
+    }))
   });
 };

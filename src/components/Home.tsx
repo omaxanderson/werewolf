@@ -8,15 +8,10 @@ import { composeWithDevTools } from 'redux-devtools-extension';
 import { WebSocketAction } from '../IWebsocket';
 import Setup from './Setup';
 import Game from './Game';
-import {
-  DispatchObject,
-  GameOptions,
-  Store,
-  ReduxAction,
-} from './Interfaces';
+import { DispatchObject, GameOptions, ReduxAction, Store, } from './Interfaces';
+import reducer from './reducers/Home';
 
 './Interfaces';
-import reducer from './reducers/Home';
 
 const WebSocketClient = WebSocket.w3cwebsocket;
 
@@ -69,6 +64,12 @@ export class Home extends React.Component<Store & {
             this.props.dispatch({
               type: ReduxAction.LIST_PLAYERS,
               payload: m.players,
+            });
+            break;
+          case WebSocketAction.SEND_PLAYER_ID:
+            this.props.dispatch({
+              type: ReduxAction.SET_PLAYER_ID,
+              payload: m.playerId,
             });
             break;
           case WebSocketAction.START_GAME:

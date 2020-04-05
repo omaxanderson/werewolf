@@ -6,22 +6,23 @@ import Player from './Player';
 import { Store } from './Interfaces';
 import Ribbon from './Ribbon';
 import style from './Game.scss';
+import { WebSocketAction } from '../IWebsocket';
 
 type Phase = Character | 'conference';
 
 const INTERVAL = 1000;
 
 class Game extends React.Component<Store, {
-  current: Phase;
-  next: Phase;
+  middleCardsSelected: number[];
+  playersSelected: Player[];
 }> {
   private interval;
   constructor(props) {
     super(props);
 
     this.state = {
-      current: null,
-      next: null,
+      middleCardsSelected: [],
+      playersSelected: [],
     }
   }
 
@@ -32,57 +33,14 @@ class Game extends React.Component<Store, {
      */
   }
 
-  getPositionInGame = () => {
-    const { gameOptions, } = this.props;
-    const {
-      characters,
-      conferenceStart,
-      secondsToConference,
-    } = gameOptions;
-    const charactersToPlay = characters.filter(c => c.startTime);
-    const now = Date.now();
-    if (!conferenceStart || !charactersToPlay[0]?.startTime) {
-      return;
-    }
-
-    // case 1, game hasn't started
-    if (now < charactersToPlay[0].startTime) {
-      return this.setState({ next: charactersToPlay[0] });
-    }
-
-    const conferenceEnd = conferenceStart + (secondsToConference * 1000);
-    // case 2, it's conference time
-    if (now < conferenceEnd && now > conferenceStart) {
-      return this.setState({ current: 'conference' });
-    }
-
-    // case 3, conference is over
-    if (now > conferenceEnd) {
-      return this.setState({ current: null, next: null });
-    }
-
-    // case 4, characters are taking their turns
-    const current = charactersToPlay
-      .filter(c => c.startTime < now)
-      .reduce((previous, cur) => {
-      if (!previous || cur.startTime > previous.startTime) {
-        return cur;
-      }
-      return previous;
-    });
-    const next = charactersToPlay.find(c => c.startTime > now);
-    this.setState({
-      current,
-      next,
-    });
-  };
-
   getGameBody = () => {
     const {
       gameOptions,
       gameState,
       extraInfo,
       playerId,
+      client,
+      players,
     } = this.props;
     const { startingCharacter } = gameOptions;
     const ribbonItems: Character[] = [
@@ -108,21 +66,44 @@ class Game extends React.Component<Store, {
     ];
 
     let extraJsx;
-    if (extraInfo && this.isMyTurn()) {
+    let onMiddleCardClick = (idx: number) => {};
+    let onPlayerClick = (player: any) => {};
+    const isMyTurn = this.isMyTurn();
+    if (isMyTurn) {
       const {
         allWerewolves,
         allMasons,
         insomniac,
-      } = extraInfo;
+      } = extraInfo || {};
       switch (startingCharacter.name) {
         case 'Werewolf':
           if (allWerewolves.length === 1) {
-            extraJsx = <div>You are a solo wolf! Click on a middle card to view it.</div>
+            extraJsx = <div>You are a solo wolf! Click on a middle card to view it.</div>;
+            onMiddleCardClick = (idx: number) => client.send(JSON.stringify({
+              action: WebSocketAction.CHARACTER_ACTION,
+              params: {
+                middleCardsSelected: [idx],
+              },
+            }));
             // solo wolf, look at a middle card
           } else {
             const otherWolf = allWerewolves.find(client => client.playerId !== playerId);
             extraJsx = <div>Your other wolf is {otherWolf.name}</div>
           }
+          break;
+        case 'Mystic Wolf':
+          onPlayerClick = (player) => {
+            if (player.playerId !== playerId) {
+              client.send(JSON.stringify({
+                action: WebSocketAction.CHARACTER_ACTION,
+                params: {
+                  playersSelected: [player],
+                },
+              }));
+            } else {
+              alert('Don\'t choose yourself you walnut.');
+            }
+          };
           break;
         case 'Minion':
           const one = allWerewolves.length === 1;
@@ -142,6 +123,74 @@ class Game extends React.Component<Store, {
             extraJsx = <div>Your other wolf is {otherMason.name}</div>
           }
           break;
+        case 'Robber':
+          onPlayerClick = (player) => {
+            if (player.playerId !== playerId) {
+              client.send(JSON.stringify({
+                action: WebSocketAction.CHARACTER_ACTION,
+                params: {
+                  playersSelected: [player],
+                },
+              }));
+            } else {
+              alert('Don\'t choose yourself you walnut.');
+            }
+          };
+          extraJsx = <div>Click on a player to rob</div>;
+          break;
+        case 'Seer':
+          onPlayerClick = (player) => {
+            if (player.playerId !== playerId) {
+              client.send(JSON.stringify({
+                action: WebSocketAction.CHARACTER_ACTION,
+                params: {
+                  playersSelected: [player],
+                },
+              }));
+            } else {
+              alert('Don\'t choose yourself you walnut.');
+            }
+          };
+          onMiddleCardClick = (idx: number) => {
+            const { middleCardsSelected: currentlySelected } = this.state;
+            const middleCardsSelected = [...currentlySelected, idx];
+            this.setState({ middleCardsSelected }, () => {
+              if (middleCardsSelected.length === 2) {
+                client.send(JSON.stringify({
+                  action: WebSocketAction.CHARACTER_ACTION,
+                  params: { middleCardsSelected },
+                }));
+              }
+            });
+          };
+          extraJsx = <div>Click on a player to see, or select two cards from the middle.</div>;
+        break;
+        case 'Troublemaker':
+          onPlayerClick = (player) => {
+            const { playersSelected: currentlySelected } = this.state;
+            const playersSelected = [...currentlySelected, player];
+            if (player.playerId === playerId) {
+              alert('Don\'t choose yourself you walnut.');
+            } else {
+              this.setState({ playersSelected }, () => {
+                if (playersSelected.length === 2) {
+                  client.send(JSON.stringify({
+                    action: WebSocketAction.CHARACTER_ACTION,
+                    params: { playersSelected },
+                  }));
+                }
+              });
+            }
+          };
+          break;
+        case 'Drunk':
+          onMiddleCardClick = (idx: number) => client.send(JSON.stringify({
+            action: WebSocketAction.CHARACTER_ACTION,
+            params: {
+              middleCardsSelected: [idx],
+            },
+          }));
+          break;
         case 'Insomniac':
           extraJsx = <div>You are {insomniac.name === 'Insomniac' ? 'still' : 'now'} the {insomniac.name}</div>;
           break;
@@ -153,6 +202,15 @@ class Game extends React.Component<Store, {
     // doing this wonky + 1 because we're adding an element to the array
     return (
       <>
+        <div>Players</div>
+        <div className={style.PlayerContainer}>
+          {players.map(player => (
+            <Player
+              player={player}
+              onPlayerClick={onPlayerClick}
+            />
+          ))}
+        </div>
         {extraJsx}
         Character Order
         <div className={style.RibbonContainer}>
@@ -164,7 +222,7 @@ class Game extends React.Component<Store, {
             { name: 'Middle Card', color: '#ACAEB0' },
             { name: 'Middle Card', color: '#ACAEB0' },
             { name: 'Middle Card', color: '#ACAEB0' },
-          ]} idx={-1} />
+          ]} idx={-1} onClick={onMiddleCardClick}/>
         </div>
       </>
     );
@@ -211,15 +269,6 @@ class Game extends React.Component<Store, {
             </div>
           </div>
         }
-        <div>Players</div>
-        <div className={style.PlayerContainer}>
-          {players.map(player => (
-            <Player
-              player={player}
-              onPlayerClick={isMyTurn ? this.onPlayerClick : () => {}}
-            />
-          ))}
-        </div>
         {jsx}
       </>
     )

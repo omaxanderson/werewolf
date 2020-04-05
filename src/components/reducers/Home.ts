@@ -35,11 +35,15 @@ export default (state: Store = initialState, action) => {
         ...state,
         gameOptions: payload,
       };
+    case ReduxAction.SET_PLAYER_ID:
+      return {
+        ...state,
+        playerId: payload,
+      };
     case ReduxAction.LIST_PLAYERS:
       return {
         ...state,
         players: payload,
-        playerId: payload.playerId || state.playerId,
       };
     case ReduxAction.SET_WS_CLIENT:
       console.log('client payload', payload);

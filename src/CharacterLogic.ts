@@ -1,6 +1,6 @@
 import { Character } from './components/Characters';
 import { MyWebSocket } from './Websocket';
-import { ICharacter, ICharacterExtraData } from './components/Interfaces';
+import { CharacterActionParams, ICharacter, ICharacterExtraData } from './components/Interfaces';
 
 export const getCharacterTurnInfo = (
   currentCharacter: ICharacter,
@@ -38,11 +38,6 @@ export const getCharacterTurnInfo = (
   }
 };
 
-interface CharacterActionParams {
-  playersSelected?: MyWebSocket[];
-  middleCardsSelected?: number[];
-}
-
 const findSelectedPlayerCharacter = (clients: MyWebSocket[], player: MyWebSocket): Character => {
   let character: Character;
   clients.forEach(c => {
@@ -74,6 +69,8 @@ export const handleCharacterActions = (
         return findSelectedPlayerCharacter(clients, first);
       }
       break;
+    case 'Werewolf':
+      return [middleCards[firstMiddle]];
     case 'Seer':
       if (playersSelected?.length) {
         return findSelectedPlayerCharacter(clients, first);

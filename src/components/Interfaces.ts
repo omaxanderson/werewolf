@@ -20,6 +20,7 @@ export enum ReduxAction {
   SET_NAME = 'SET_NAME',
   START_GAME = 'START_GAME',
   GAME_IS_STARTING = 'GAME_IS_STARTING',
+  SET_PLAYER_ID = 'SET_PLAYER_ID',
 }
 
 export interface GameState extends GameOptions {
@@ -71,4 +72,9 @@ export interface ICharacterExtraData {
   allWerewolves?: MyWebSocket[];
   allMasons?: MyWebSocket[];
   insomniac?: Character;
+}
+
+export interface CharacterActionParams {
+  playersSelected?: MyWebSocket[];
+  middleCardsSelected?: number[];
 }

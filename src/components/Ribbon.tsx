@@ -8,12 +8,19 @@ type RibbonItem = Pick<
   'name'
   >;
 
+type OnClickFunc = (val: number) => void;
+
 class Ribbon extends React.Component<{
   characters: RibbonItem[];
   idx: number;
+  onClick?: OnClickFunc;
 }, {}> {
   render() {
-    const { characters, idx } = this.props;
+    const {
+      characters,
+      idx,
+      onClick,
+    } = this.props;
     return (
       <div className={style.RibbonContainer}>
         {characters.map((c, i) => {
@@ -21,7 +28,11 @@ class Ribbon extends React.Component<{
             ? style['RibbonItem--active']
             : style.RibbonItem;
           return (
-            <div className={className} style={{ backgroundColor: c.color }}>
+            <div
+              onClick={() => onClick(i)}
+              className={className}
+              style={{ backgroundColor: c.color }}
+            >
               {c.name}
             </div>
           )
