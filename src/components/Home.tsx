@@ -84,6 +84,18 @@ export class Home extends React.Component<Store & {
               payload: m,
             });
             break;
+          case WebSocketAction.ACTION_RESULT:
+            this.props.dispatch({
+              type: ReduxAction.SAVE_ACTION_RESULT,
+              payload: m,
+            });
+            break;
+          case WebSocketAction.GAME_END:
+            this.props.dispatch({
+              type: ReduxAction.GAME_END,
+              payload: m,
+            });
+            break;
           default:
             console.log('unhandled message received: ', m);
         }

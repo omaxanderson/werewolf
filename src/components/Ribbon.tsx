@@ -5,7 +5,8 @@ import style from './Ribbon.scss';
 type RibbonItem = Pick<
   Character,
   'color' |
-  'name'
+  'name' |
+  'key'
   >;
 
 type OnClickFunc = (val: number) => void;
@@ -29,6 +30,7 @@ class Ribbon extends React.Component<{
             : style.RibbonItem;
           return (
             <div
+              key={c.key}
               onClick={() => onClick(i)}
               className={className}
               style={{ backgroundColor: c.color }}

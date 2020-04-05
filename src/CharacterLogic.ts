@@ -1,6 +1,6 @@
 import { Character } from './components/Characters';
 import { MyWebSocket } from './Websocket';
-import { CharacterActionParams, ICharacter, ICharacterExtraData } from './components/Interfaces';
+import { ActionResponse, CharacterActionParams, ICharacter, ICharacterExtraData } from './components/Interfaces';
 
 export const getCharacterTurnInfo = (
   currentCharacter: ICharacter,
@@ -55,7 +55,7 @@ export const handleCharacterActions = (
   player: MyWebSocket,
   params: CharacterActionParams,
   middleCards: Character[],
-) => {
+): ActionResponse => {
   const { startingCharacter: character } = player;
   const {
     playersSelected,
@@ -63,21 +63,35 @@ export const handleCharacterActions = (
   } = params;
   const [first, second] = playersSelected || [];
   const [firstMiddle, secondMiddle] = middleCardsSelected || [];
+  const response: ActionResponse = {
+    message: '',
+    result: [],
+  };
   switch (character.name) {
     case 'Mystic Wolf':
       if (playersSelected.length) {
-        return findSelectedPlayerCharacter(clients, first);
+        response.result = [findSelectedPlayerCharacter(clients, first)];
+        response.message = `You have viewed the ${response.result[0].name}.`;
+        return response;
       }
       break;
     case 'Werewolf':
-      return [middleCards[firstMiddle]];
+      response.result = [middleCards[firstMiddle]];
+      response.message = `You saw the ${response.result[0].name} in the middle.`;
+      return response;
     case 'Seer':
       if (playersSelected?.length) {
-        return findSelectedPlayerCharacter(clients, first);
+        response.result = [findSelectedPlayerCharacter(clients, first)];
+        response.message = `You saw the ${response.result[0].name}.`;
+        return response;
       }
-      return [middleCards[firstMiddle], middleCards[secondMiddle]];
+      response.result = [middleCards[firstMiddle], middleCards[secondMiddle]];
+      response.message = `You saw the ${response.result[0].name} and the ${response.result[1].name} in the middle.`;
+      return response;
     case 'Apprentice Seer':
-      return middleCards[firstMiddle];
+      response.result = [middleCards[firstMiddle]];
+      response.message = `You saw the ${response.result[0].name} in the middle.`;
+      return response;
     case 'Robber':
       // swap the characters
       let newCharacter: Character;
@@ -89,7 +103,9 @@ export const handleCharacterActions = (
           player.character = newCharacter; // set robber as new character
         }
       });
-      return newCharacter;
+      response.result = [newCharacter];
+      response.message = `You are now the ${newCharacter.name}.`;
+      return response;
     case 'Troublemaker':
       // similar to robber just with two players
       // swap the characters
@@ -106,12 +122,14 @@ export const handleCharacterActions = (
       const tempCharacter = clientA.character;
       clientA.character = clientB.character;
       clientB.character = tempCharacter;
-      return true;
+      response.message = 'Success!';
+      return response;
     case 'Drunk':
       // splice middle cards with current
       const [drunkNewCharacter] = middleCards.splice(firstMiddle, 1, character);
       player.character = drunkNewCharacter;
-      return true;
+      response.message = 'Success!';
+      return response;
     default:
       console.log('character action not supported');
   }

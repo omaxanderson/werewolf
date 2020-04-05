@@ -33,6 +33,35 @@ class Game extends React.Component<Store, {
      */
   }
 
+  getGameResults = () => {
+    const { gameResults, players } = this.props;
+    const { middleCards, ...rest } = gameResults;
+    console.log(middleCards);
+    console.log(rest);
+    console.log(players);
+    const mappedToNames = Object.keys(rest).map(playerId => {
+      const { name: playerName } = players.find(p => p.playerId === playerId);
+      return [playerName, rest[playerId]];
+    });
+    console.log(middleCards);
+    console.log(mappedToNames);
+    return (
+      <div>
+        <div>
+        {mappedToNames.map(([name, character]) => (
+          <div key={`result_${name}`}>
+            {name}: <strong>{character.name}</strong>
+          </div>
+        ))}
+        </div>
+        <div>
+          Middle Cards
+          {middleCards.map(card => <div key={`middle${card.name}`}>{card.name}</div>)}
+        </div>
+      </div>
+    )
+  };
+
   getGameBody = () => {
     const {
       gameOptions,
@@ -41,7 +70,12 @@ class Game extends React.Component<Store, {
       playerId,
       client,
       players,
+      actionResult,
+      gameResults,
     } = this.props;
+    if (gameResults) {
+      return this.getGameResults();
+    }
     const { startingCharacter } = gameOptions;
     const ribbonItems: Character[] = [
       {
@@ -104,6 +138,7 @@ class Game extends React.Component<Store, {
               alert('Don\'t choose yourself you walnut.');
             }
           };
+          extraJsx = <div>Click on another player to view that card.</div>;
           break;
         case 'Minion':
           const one = allWerewolves.length === 1;
@@ -136,7 +171,7 @@ class Game extends React.Component<Store, {
               alert('Don\'t choose yourself you walnut.');
             }
           };
-          extraJsx = <div>Click on a player to rob</div>;
+          extraJsx = <div>Click on a player to rob their card.</div>;
           break;
         case 'Seer':
           onPlayerClick = (player) => {
@@ -182,6 +217,7 @@ class Game extends React.Component<Store, {
               });
             }
           };
+          extraJsx = <div>Click on two players to swap them.</div>;
           break;
         case 'Drunk':
           onMiddleCardClick = (idx: number) => client.send(JSON.stringify({
@@ -190,6 +226,7 @@ class Game extends React.Component<Store, {
               middleCardsSelected: [idx],
             },
           }));
+          extraJsx = <div>Click on a card in the middle to take that card</div>;
           break;
         case 'Insomniac':
           extraJsx = <div>You are {insomniac.name === 'Insomniac' ? 'still' : 'now'} the {insomniac.name}</div>;
@@ -199,29 +236,33 @@ class Game extends React.Component<Store, {
       }
     }
 
+    let actionResultMessage = actionResult?.message || '';
+
     // doing this wonky + 1 because we're adding an element to the array
     return (
       <>
+        {extraJsx}
+        {actionResultMessage && <div>{actionResultMessage}</div>}
+        <div>Character Order</div>
+        <div className={style.RibbonContainer}>
+          <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
+        </div>
         <div>Players</div>
         <div className={style.PlayerContainer}>
           {players.map(player => (
             <Player
+              key={`player_${player.playerId}`}
               player={player}
               onPlayerClick={onPlayerClick}
             />
           ))}
         </div>
-        {extraJsx}
-        Character Order
-        <div className={style.RibbonContainer}>
-          <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
-        </div>
         Middle Cards
         <div className={style.RibbonContainer}>
           <Ribbon characters={[
-            { name: 'Middle Card', color: '#ACAEB0' },
-            { name: 'Middle Card', color: '#ACAEB0' },
-            { name: 'Middle Card', color: '#ACAEB0' },
+            { name: 'Middle Card', color: '#ACAEB0', key: 'm1' },
+            { name: 'Middle Card', color: '#ACAEB0', key: 'm2' },
+            { name: 'Middle Card', color: '#ACAEB0', key: 'm3'  },
           ]} idx={-1} onClick={onMiddleCardClick}/>
         </div>
       </>
@@ -251,15 +292,15 @@ class Game extends React.Component<Store, {
   render() {
     const {
       gameOptions,
-      players,
+      gameResults,
     } = this.props;
     const { startingCharacter } = gameOptions;
     let jsx = this.getGameBody();
-    const isMyTurn = this.isMyTurn();
     return (
       <>
         <button onClick={this.debugStepForward}>Next</button>
-        {startingCharacter &&
+        {gameResults && <div>The results are in!</div>}
+        {startingCharacter && !gameResults &&
           <div className={style.Me}>
             <div>You are the
               {' '}

@@ -10,6 +10,8 @@ const initialState = {
   name: null,
   extraInfo: null,
   playerId: null,
+  actionResult: null,
+  gameResults: null,
   dispatch: (obj: DispatchObject) => console.log('bad things happened'),
 };
 
@@ -61,6 +63,16 @@ export default (state: Store = initialState, action) => {
         ...state,
         gameOptions: payload.gameOptions,
         gameState: payload.gameState,
+      };
+    case ReduxAction.SAVE_ACTION_RESULT:
+      return {
+        ...state,
+        actionResult: payload,
+      };
+    case ReduxAction.GAME_END:
+      return {
+        ...state,
+        gameResults: payload.results,
       };
     case ReduxAction.START_GAME:
       // send the websocket message

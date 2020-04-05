@@ -20,4 +20,5 @@ export enum WebSocketAction {
   DEBUG__NEXT_CHARACTER,
   SEND_PLAYER_ID,
   ACTION_RESULT,
+  GAME_END,
 }

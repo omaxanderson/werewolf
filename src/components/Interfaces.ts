@@ -21,6 +21,13 @@ export enum ReduxAction {
   START_GAME = 'START_GAME',
   GAME_IS_STARTING = 'GAME_IS_STARTING',
   SET_PLAYER_ID = 'SET_PLAYER_ID',
+  SAVE_ACTION_RESULT = 'SAVE_ACTION_RESULT',
+  GAME_END = 'GAME_END',
+}
+
+export interface ActionResponse {
+  result: Character[];
+  message: string;
 }
 
 export interface GameState extends GameOptions {
@@ -37,6 +44,8 @@ export interface Store {
   name: string;
   playerId: string;
   extraInfo: ICharacterExtraData;
+  actionResult: ActionResponse;
+  gameResults: any;
   dispatch: (obj: DispatchObject) => any;
 }
 
@@ -53,6 +62,7 @@ export interface GameOptions {
 
 export interface IPlayer {
   name: string;
+  playerId: string;
   color?: string;
 }
 

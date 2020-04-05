@@ -6,7 +6,7 @@ import { v4 } from 'uuid';
 import Redis from './Redis';
 import parseUrl from "./util/parseUrl";
 import { CharacterActionParams, GameOptions, GameState } from './components/Interfaces';
-import { Character } from './components/Characters';
+import { Character, Team } from './components/Characters';
 import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
@@ -36,15 +36,56 @@ const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
 
 const START_BUFFER = 5 * 1000;
 
+const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
+  const results: {
+    [playerId: string]: Character;
+  } & {
+    middleCards: Character[];
+  } = {
+    middleCards: null,
+  };
+  const clients = getClientsInRoom(wss, roomId);
+  let gameId;
+  clients.forEach(client => {
+    results[client.playerId] = client.character;
+    if (!gameId && client.gameId) {
+      gameId = client.gameId;
+    }
+  });
+  const { middleCards } = JSON.parse(await Redis.get(`characters-${gameId}`));
+  results.middleCards = middleCards;
+
+  clients.forEach(client => client.send(JSON.stringify({
+    action: WebSocketAction.GAME_END,
+    results,
+  })));
+};
+
 const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: string) => {
   const state: GameState = JSON.parse(await Redis.get(`game-${gameId}`));
   const config: GameOptions = JSON.parse(await Redis.get(`config-${gameId}`));
-  const characters: { [key: string]: Character } = JSON.parse(await Redis.get(`characters-${gameId}`));
   const clients = getClientsInRoom(wss, roomId);
   state.currentIdx += 1;
   await Redis.set(`game-${gameId}`, JSON.stringify(state));
-  const currentCharacter: Character = config.characters[state.currentIdx];
-  // TODO handle done, throwing error rn on out of bounds index
+
+  const isDaylight = state.currentIdx >= config.characters.length;
+  const currentCharacter: Character = !isDaylight
+    ? config.characters[state.currentIdx]
+    // special end state character
+    : {
+      name: 'Daylight',
+      key: 'daylight',
+      order: 9000,
+      team: Team.UNKNOWN,
+      doppel: false,
+    };
+
+  if (isDaylight) {
+    setTimeout(
+      () => sendFinalCharacters(wss, roomId),
+      config.secondsToConference  * 1000,
+    );
+  }
 
   // need to send special configs depending on each character
   getClientsInRoom(wss, roomId).forEach(client => {
@@ -115,7 +156,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
 
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
-    const c = 'Troublemaker';
+    const c = 'Drunk';
     if (a.name === c) {
       return 1;
     }
@@ -181,14 +222,26 @@ export default (server) => {
           if (ws?.actionTaken === ws.gameId) {
             break;
           }
-          const redisData = await Redis.get(`characters-${ws.gameId}`);
-          const { middleCards } = JSON.parse(redisData);
+          const redisData = JSON.parse(await Redis.get(`characters-${ws.gameId}`));
+          const { middleCards } = redisData;
           const actionResult = handleCharacterActions(
             getClientsInRoom(webSocketServer, ws.roomId),
             ws,
             (m as unknown as { params: CharacterActionParams }).params,
             middleCards,
           );
+          // this should really be handled by the handleCharacterActions but
+          // eh i'm lazy
+          if (ws.startingCharacter.name === 'Drunk') {
+            middleCards[
+              (m as unknown as { params: CharacterActionParams }).params.middleCardsSelected[0]
+            ] = ws.startingCharacter;
+            await Redis.set(`characters-${ws.gameId}`, JSON.stringify({
+              ...redisData,
+              middleCards,
+            }));
+          }
+
           // fuck yeah
           getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
             console.log('name');
@@ -198,7 +251,7 @@ export default (server) => {
           ws.actionTaken = ws.gameId;
           ws.send(JSON.stringify({
             action: WebSocketAction.ACTION_RESULT,
-            result: actionResult,
+            ...actionResult,
           }));
           break;
         default:

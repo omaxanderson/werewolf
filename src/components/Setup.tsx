@@ -93,8 +93,6 @@ class Setup extends React.Component<Store & { onGameStart }, {
       alert(`Error: ${message}`);
       return;
     }
-    // const { onGameStart } = this.props;
-    // const { client } = this.props;
     const {
       characters,
       timeToConference,
@@ -108,20 +106,6 @@ class Setup extends React.Component<Store & { onGameStart }, {
         secondsPerCharacter: this.parseTime(timePerCharacter),
       },
     });
-    /*
-    client.send(JSON.stringify({
-      characters,
-      secondsToConference: this.parseTime(timeToConference),
-      secondsPerCharacter: this.parseTime(timePerCharacter),
-    }));
-     */
-    /*
-    onGameStart({
-      characters,
-      secondsToConference: this.parseTime(timeToConference),
-      secondsPerCharacter: this.parseTime(timePerCharacter),
-    });
-     */
   };
 
   render() {
@@ -139,7 +123,7 @@ class Setup extends React.Component<Store & { onGameStart }, {
           Room Members:
         </div>
         <div>
-          {players.map(p => <div>{p.name}</div>)}
+          {players.map(p => <div key={p.playerId}>{p.name}</div>)}
         </div>
         <br />
         <div>
@@ -152,11 +136,14 @@ class Setup extends React.Component<Store & { onGameStart }, {
         </div>
         <div>
           {C.map(c => (
-            <>
-              <input type="checkbox" id={c.key} onChange={this.onCharacterChange} value={c.name} />
+            <div key={`cbox_${c.key}`}>
+              <input
+                type="checkbox" id={c.key}
+                onChange={this.onCharacterChange}
+                value={c.name}
+              />
               <label htmlFor={c.key}>{c.name}</label>
-              <br />
-            </>
+            </div>
           ))}
         </div>
         <div>
