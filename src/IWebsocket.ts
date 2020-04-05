@@ -16,5 +16,6 @@ export enum WebSocketAction {
   SET_COLOR,
   SET_NAME,
   NEXT_CHARACTER,
+  CHARACTER_ACTION,
   DEBUG__NEXT_CHARACTER,
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Character, Team } from "./Characters";
-import { IPlayer, Room } from './Interfaces';
+import { IPlayer } from './Interfaces';
 import Player from './Player';
 import { Store } from './Interfaces';
 import Ribbon from './Ribbon';
@@ -34,7 +34,7 @@ class Game extends React.Component<Store, {
   }
 
   getPositionInGame = () => {
-    const { gameOptions } = this.props;
+    const { gameOptions, } = this.props;
     const {
       characters,
       conferenceStart,
@@ -79,7 +79,12 @@ class Game extends React.Component<Store, {
   };
 
   getGameBody = () => {
-    const { gameOptions, gameState } = this.props;
+    const {
+      gameOptions,
+      gameState,
+      extraInfo,
+      playerId,
+    } = this.props;
     const { startingCharacter } = gameOptions;
     const ribbonItems: Character[] = [
       {
@@ -103,9 +108,51 @@ class Game extends React.Component<Store, {
       },
     ];
 
+    let extraJsx;
+    if (extraInfo) {
+      const {
+        allWerewolves,
+        allMasons,
+        insomniac,
+      } = extraInfo;
+      switch (startingCharacter.name) {
+        case 'Werewolf':
+          if (allWerewolves.length === 1) {
+            extraJsx = <div>You are a solo wolf! Click on a middle card to view it.</div>
+            // solo wolf, look at a middle card
+          } else {
+            const otherWolf = allWerewolves.find(client => client.playerId !== playerId);
+            extraJsx = <div>Your other wolf is {otherWolf.name}</div>
+          }
+          break;
+        case 'Minion':
+          const one = allWerewolves.length === 1;
+          const str = `The other werewol${one ? 'f' : 'ves'} ${one ? 'is' : 'are'} ${allWerewolves.map(w => w.name).join(' and ')}.`;
+          if (allWerewolves.length > 0) {
+            extraJsx = <div>{str}</div>;
+          }
+          break;
+        case 'Mason':
+          if (allMasons.length === 1) {
+            extraJsx = <div>You are a solo mason!</div>
+            // solo wolf, look at a middle card
+          } else {
+            const otherMason = allMasons.find(client => client.playerId !== playerId);
+            extraJsx = <div>Your other wolf is {otherMason.name}</div>
+          }
+          break;
+        case 'Insomniac':
+          extraJsx = <div>You are {insomniac.name === 'Insomniac' ? 'still' : 'now'} the {insomniac.name}</div>;
+          break;
+        default:
+          // do nothing
+      }
+    }
+
     // doing this wonky + 1 because we're adding an element to the array
     return (
       <>
+        {extraJsx}
         Character Order
         <div className={style.RibbonContainer}>
           <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />

@@ -10,6 +10,8 @@ import { Character } from './components/Characters';
 import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
+import { getCharacterTurnInfo } from './CharacterLogic';
+import { ICharacterExtraData } from './components/Interfaces';
 
 export interface MyWebSocket extends WebSocket {
   roomId: string;
@@ -37,17 +39,27 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
   const state: GameState = JSON.parse(await Redis.get(`game-${gameId}`));
   const config: GameOptions = JSON.parse(await Redis.get(`config-${gameId}`));
   const characters: { [key: string]: Character } = JSON.parse(await Redis.get(`characters-${gameId}`));
+  const clients = getClientsInRoom(wss, roomId);
   state.currentIdx += 1;
   await Redis.set(`game-${gameId}`, JSON.stringify(state));
-  const currentCharacter = config.characters[state.currentIdx];
+  const currentCharacter: Character = config.characters[state.currentIdx];
+  // TODO handle done, throwing error rn on out of bounds index
+
   // need to send special configs depending on each character
   getClientsInRoom(wss, roomId).forEach(client => {
-    const character = client.character;
-    console.log('has a char?', character);
-    client.send(JSON.stringify({
+    const message: {
+      action: WebSocketAction;
+      gameState: GameState;
+      extraInfo?: ICharacterExtraData;
+    } = {
       action: WebSocketAction.NEXT_CHARACTER,
       gameState: state,
-    }));
+    };
+    if (currentCharacter.name === client.startingCharacter.name) {
+      // get special config
+      message.extraInfo = getCharacterTurnInfo(currentCharacter, clients);
+    }
+    client.send(JSON.stringify(message));
   });
 };
 
@@ -154,12 +166,25 @@ export default (server) => {
         case WebSocketAction.DEBUG__NEXT_CHARACTER:
           await nextCharacterTurn(webSocketServer, ws.roomId, ws.gameId);
           break;
+        case WebSocketAction.CHARACTER_ACTION:
+          console.log('do the thing');
+          break;
         default:
           ws.send(JSON.stringify({
             message: `hello you sent: ${m.message}`,
             messageId: m.messageId,
           }));
       }
+    });
+
+    // maybe this should be on a timeout to allow re-connection
+    ws.on('close', () => {
+      const filteredClients = getClientsInRoom(webSocketServer, ws.roomId)
+        .filter(client => client.playerId !== ws.playerId);
+      filteredClients.forEach(client => client.send(JSON.stringify({
+        action: WebSocketAction.LIST_PLAYERS,
+        players: filteredClients,
+      })));
     });
 
     // set unique id for client
@@ -186,6 +211,7 @@ export default (server) => {
     ws.send(JSON.stringify({
       action: WebSocketAction.LIST_PLAYERS,
       players: simplifiedClients,
+      playerId: ws.playerId,
     }));
   });
 };

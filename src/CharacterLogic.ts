@@ -1,21 +1,11 @@
 import { Character } from './components/Characters';
 import { MyWebSocket } from './Websocket';
+import { ICharacter, ICharacterExtraData } from './components/Interfaces';
 
-type ICharacter = Pick<Character, 'name'>;
-export type IWebSocket = Pick<
-  MyWebSocket,
-  'startingCharacter' |
-  'character' |
-  'name'
->;
-
-interface ICharacterExtraData {
-  allWerewolves?: MyWebSocket[];
-  allMasons?: MyWebSocket[];
-  insomniac?: Character;
-}
-
-export const getCharacterTurnInfo = (currentCharacter: ICharacter, clients: MyWebSocket[]): ICharacterExtraData => {
+export const getCharacterTurnInfo = (
+  currentCharacter: ICharacter,
+  clients: MyWebSocket[],
+): ICharacterExtraData => {
   switch (currentCharacter.name) {
     // Werewolves need to know other werewolves
     case 'Werewolf':

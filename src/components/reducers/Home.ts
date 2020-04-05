@@ -8,6 +8,8 @@ const initialState = {
   players: [],
   client: null,
   name: null,
+  extraInfo: null,
+  playerId: null,
   dispatch: (obj: DispatchObject) => console.log('bad things happened'),
 };
 
@@ -21,6 +23,7 @@ export default (state: Store = initialState, action) => {
       return {
         ...state,
         gameState: payload.gameState,
+        extraInfo: payload.extraInfo || state.extraInfo,
       };
     case ReduxAction.SET_ROOM_ID:
       return {
@@ -36,6 +39,7 @@ export default (state: Store = initialState, action) => {
       return {
         ...state,
         players: payload,
+        playerId: payload.playerId || state.playerId,
       };
     case ReduxAction.SET_WS_CLIENT:
       console.log('client payload', payload);

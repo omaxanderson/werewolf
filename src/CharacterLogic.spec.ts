@@ -1,9 +1,9 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { getCharacterTurnInfo, handleCharacterActions, IWebSocket } from './CharacterLogic';
+import { getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
 import { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
 import { clientsFixture, getCharacter, middleCardsFixture, midGameClients } from './Fixtures.spec';
-import { isCharacter } from './components/Interfaces';
+import { isCharacter, IWebSocket } from './components/Interfaces';
 
 type TestWebSocket = IWebSocket & { name: string };
 

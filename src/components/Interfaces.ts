@@ -1,5 +1,6 @@
 import { Character } from './Characters';
 import * as WebSocket from 'websocket';
+import { MyWebSocket } from '../Websocket';
 
 export function isCharacter(c: Character | any): c is Character {
   return c && ((c as Character).name !== undefined);
@@ -33,6 +34,8 @@ export interface Store {
   players: IPlayer[];
   client: WebSocket.w3cwebsocket;
   name: string;
+  playerId: string;
+  extraInfo: ICharacterExtraData;
   dispatch: (obj: DispatchObject) => any;
 }
 
@@ -56,3 +59,16 @@ export interface Room {
   players: IPlayer[];
 }
 
+export type ICharacter = Pick<Character, 'name'>;
+export type IWebSocket = Pick<
+  MyWebSocket,
+  'startingCharacter' |
+  'character' |
+  'name'
+  >;
+
+export interface ICharacterExtraData {
+  allWerewolves?: MyWebSocket[];
+  allMasons?: MyWebSocket[];
+  insomniac?: Character;
+}
