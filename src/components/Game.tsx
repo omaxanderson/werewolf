@@ -6,7 +6,6 @@ import Player from './Player';
 import { Store } from './Interfaces';
 import Ribbon from './Ribbon';
 import style from './Game.scss';
-import { start } from 'repl';
 
 type Phase = Character | 'conference';
 
@@ -109,7 +108,7 @@ class Game extends React.Component<Store, {
     ];
 
     let extraJsx;
-    if (extraInfo) {
+    if (extraInfo && this.isMyTurn()) {
       const {
         allWerewolves,
         allMasons,
@@ -127,9 +126,11 @@ class Game extends React.Component<Store, {
           break;
         case 'Minion':
           const one = allWerewolves.length === 1;
-          const str = `The other werewol${one ? 'f' : 'ves'} ${one ? 'is' : 'are'} ${allWerewolves.map(w => w.name).join(' and ')}.`;
+          const str = `The ${one ? 'only' : ''} werewol${one ? 'f' : 'ves'} ${one ? 'is' : 'are'} ${allWerewolves.map(w => w.name).join(' and ')}.`;
           if (allWerewolves.length > 0) {
             extraJsx = <div>{str}</div>;
+          } else {
+            extraJsx = <div>All the werewolves are in the middle.</div>
           }
           break;
         case 'Mason':
@@ -183,6 +184,12 @@ class Game extends React.Component<Store, {
     console.log('clicked on', player);
   };
 
+  debugStepForward = () => {
+    this.props.client.send(JSON.stringify({
+      action: 8,
+    }));
+  };
+
   render() {
     const {
       gameOptions,
@@ -193,6 +200,7 @@ class Game extends React.Component<Store, {
     const isMyTurn = this.isMyTurn();
     return (
       <>
+        <button onClick={this.debugStepForward}>Next</button>
         {startingCharacter &&
           <div className={style.Me}>
             <div>You are the
