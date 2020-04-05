@@ -155,7 +155,7 @@ class Game extends React.Component<Store, {
             // solo wolf, look at a middle card
           } else {
             const otherMason = allMasons.find(client => client.playerId !== playerId);
-            extraJsx = <div>Your other wolf is {otherMason.name}</div>
+            extraJsx = <div>Your other mason is {otherMason.name}</div>
           }
           break;
         case 'Robber':
@@ -238,9 +238,20 @@ class Game extends React.Component<Store, {
 
     let actionResultMessage = actionResult?.message || '';
 
+    const isDaylight = gameState.currentIdx === gameOptions.characters.length;
+    if (isDaylight && !this.interval) {
+      this.interval = setInterval(() => {
+        // force a rerender
+        this.forceUpdate();
+      }, 1000);
+    }
+
+    const timer = this.getTimerJsx();
+
     // doing this wonky + 1 because we're adding an element to the array
     return (
       <>
+        {timer}
         {extraJsx}
         {actionResultMessage && <div>{actionResultMessage}</div>}
         <div>Character Order</div>
@@ -267,6 +278,25 @@ class Game extends React.Component<Store, {
         </div>
       </>
     );
+  };
+
+  getTimerJsx = () => {
+    const {
+      gameState,
+      gameOptions,
+      extraInfo,
+    } = this.props;
+    const isDaylight = gameState.currentIdx === gameOptions.characters.length;
+    if (isDaylight) {
+      const conferenceEnd = extraInfo?.conferenceEndTime;
+      if (conferenceEnd) {
+        const diff = Math.floor((conferenceEnd - Date.now()) / 1000);
+        const minutes = Math.floor(diff / 60);
+        const seconds = (diff % 60).toString().padStart(2, '0');
+        return <div>{minutes}:{seconds}</div>;
+      }
+    }
+    return null;
   };
 
   isMyTurn = (): boolean => {

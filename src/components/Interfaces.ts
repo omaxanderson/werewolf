@@ -82,6 +82,7 @@ export interface ICharacterExtraData {
   allWerewolves?: MyWebSocket[];
   allMasons?: MyWebSocket[];
   insomniac?: Character;
+  conferenceEndTime?: number;
 }
 
 export interface CharacterActionParams {

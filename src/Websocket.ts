@@ -83,7 +83,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
   if (isDaylight) {
     setTimeout(
       () => sendFinalCharacters(wss, roomId),
-      config.secondsToConference  * 1000,
+      config.secondsToConference * 1000,
     );
   }
 
@@ -100,6 +100,13 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
     if (currentCharacter.name === client.startingCharacter.name) {
       // get special config
       message.extraInfo = getCharacterTurnInfo(currentCharacter, clients);
+    } else if (isDaylight) {
+      // get conference end time
+      const millisecondsToConference = config.secondsToConference * 1000;
+      const endTime = Date.now() + millisecondsToConference;
+      message.extraInfo = {
+        conferenceEndTime: endTime,
+      }
     }
     client.send(JSON.stringify(message));
   });
