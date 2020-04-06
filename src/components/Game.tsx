@@ -36,15 +36,10 @@ class Game extends React.Component<Store, {
   getGameResults = () => {
     const { gameResults, players } = this.props;
     const { middleCards, ...rest } = gameResults;
-    console.log(middleCards);
-    console.log(rest);
-    console.log(players);
     const mappedToNames = Object.keys(rest).map(playerId => {
       const { name: playerName } = players.find(p => p.playerId === playerId);
       return [playerName, rest[playerId]];
     });
-    console.log(middleCards);
-    console.log(mappedToNames);
     return (
       <div>
         <div>

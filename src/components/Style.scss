@@ -1,0 +1,30 @@
+$primaryColor: #03fccf;
+$defaultColor: #f5f5f5;
+$hoverDefaultColor: #ededed;
+$activeDefaultColor: #e0e0e0;
+
+.Button {
+  padding: 10px;
+  border-radius: 0;
+  border: none;
+  background-color: $defaultColor;
+  transition: 0.3s;
+
+  &:hover {
+    background-color: $hoverDefaultColor;
+    cursor: pointer;
+  }
+
+  &:active {
+    background-color: $activeDefaultColor;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &__Primary {
+    @extend .Button;
+    background-color: $primaryColor;
+  }
+}

@@ -1,15 +1,15 @@
-.RibbonContainer {
+.src-components-Ribbon__RibbonContainer {
   display: flex; }
 
-.RibbonItem, .RibbonItem--active {
+.src-components-Ribbon__RibbonItem, .src-components-Ribbon__RibbonItem--active {
   width: 100px;
   height: 100px;
   display: flex;
   justify-content: center;
   align-items: center; }
-  .RibbonItem--active {
+  .src-components-Ribbon__RibbonItem--active {
     border: 2px solid #10aafa; }
-  .RibbonItem + .RibbonItem, .RibbonItem--active + .RibbonItem, .RibbonItem + .RibbonItem--active, .RibbonItem--active + .RibbonItem--active {
+  .src-components-Ribbon__RibbonItem + .src-components-Ribbon__RibbonItem, .src-components-Ribbon__RibbonItem--active + .src-components-Ribbon__RibbonItem, .src-components-Ribbon__RibbonItem + .src-components-Ribbon__RibbonItem--active, .src-components-Ribbon__RibbonItem--active + .src-components-Ribbon__RibbonItem--active {
     margin-left: 10px; }
 
 

@@ -1,0 +1,59 @@
+@import './Style.scss';
+$grey: #ccc;
+.Modal {
+  width: 100px;
+  height: 100px;
+  min-width: 50%;
+  // min-height: 50%;
+  background-color: white;
+  padding: 15px;
+
+  &__Container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  &__Header {
+    border-bottom: 1px solid $grey;
+    display: flex;
+    position: relative;
+    padding-bottom: 5px;
+  }
+
+  &__HeaderText {
+    flex-grow: 9999;
+    margin-top: 0px;
+    margin-bottom: 8px;
+  }
+
+  &__HeaderClose {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 35px;
+    min-height: 35px;
+    border-radius: 50%;
+    border: none;
+    &:hover {
+      background-color: $grey;
+      cursor: pointer;
+      color: #822;
+    }
+  }
+
+  &__Footer {
+    border-top: 1px solid $grey;
+  }
+
+  &__Button {
+    @extend .Button;
+  }
+}

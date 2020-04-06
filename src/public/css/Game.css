@@ -1,19 +1,19 @@
-.PlayerContainer {
+.src-components-Game__PlayerContainer {
   margin: 10px 0;
   padding: 10px;
   border: 1px solid #ccc;
   display: flex; }
 
-.RibbonContainer {
+.src-components-Game__RibbonContainer {
   margin: 10px 0;
   padding: 10px;
   border: 1px solid #ccc; }
 
-.Me {
+.src-components-Game__Me {
   margin-bottom: 30px;
   border-bottom: 1px solid #ccc; }
 
-.Title {
+.src-components-Game__Title {
   font-weight: bold; }
 
 

@@ -19,7 +19,7 @@ const jsConfig = {
     devtool: 'source-map',
     mode: 'development',
     resolve: {
-        extensions: ['.ts', '.tsx', '.js', '.jsx', '.scss'],
+        extensions: ['.ts', '.tsx', '.js', '.jsx', '.scss', '.css'],
     },
     entry: entries('tsx'),
     output: {
@@ -51,7 +51,9 @@ const jsConfig = {
                     {
                         loader: 'css-loader',
                         options: {
-                            modules: true,
+                            modules: {
+                                localIdentName: '[path][name]__[local]',
+                            },
                             sourceMap: true,
                             esModule: true,
                         },
@@ -63,7 +65,11 @@ const jsConfig = {
                         },
                     },
                 ]
-            }
+            },
+            {
+                test: /\.css$/,
+                loader: ['style-loader', 'css-loader'],
+            },
         ],
     },
 };
@@ -84,7 +90,14 @@ const cssConfig = {
                 test: /\.scss$/,
                 loader: [
                     MiniCssExtractPlugin.loader,
-                    'css-loader',
+                    {
+                        loader: 'css-loader',
+                        options: {
+                            modules: {
+                                localIdentName: '[path][name]__[local]',
+                            },
+                        },
+                    },
                     {
                         loader: 'sass-loader',
                         options: {
@@ -103,4 +116,5 @@ const cssConfig = {
     ],
 };
 
-module.exports = [jsConfig, cssConfig];
+//module.exports = [jsConfig, cssConfig];
+module.exports = jsConfig;

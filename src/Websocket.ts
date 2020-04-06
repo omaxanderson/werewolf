@@ -5,13 +5,12 @@ import shuffle from 'lodash/shuffle';
 import { v4 } from 'uuid';
 import Redis from './Redis';
 import parseUrl from "./util/parseUrl";
-import { CharacterActionParams, GameOptions, GameState } from './components/Interfaces';
+import { CharacterActionParams, GameOptions, GameState, ICharacterExtraData } from './components/Interfaces';
 import { Character, Team } from './components/Characters';
 import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
 import { getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
-import { ICharacterExtraData } from './components/Interfaces';
 
 export interface MyWebSocket extends WebSocket {
   roomId: string;
@@ -121,6 +120,8 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
 const setupGame = async (config: GameOptions, roomId: string, wss: WebSocket.Server) => {
   const {
     characters: charactersConfig,
+    // todo set a timeout to push the next_character info
+    // instead of relying on input
     secondsPerCharacter,
   } = config;
   // Add doppleganger characters when necessary

@@ -3,6 +3,14 @@ import cloneDeep from 'lodash/cloneDeep';
 import { connect } from 'react-redux';
 import C, { Character, Team } from './Characters';
 import { ReduxAction, Store } from './Interfaces';
+import {
+  TextInput,
+  Row,
+  Column,
+  Button,
+  Checkbox,
+  Header,
+} from '@omaxwellanderson/react-components';
 
 class Setup extends React.Component<Store & { onGameStart }, {
   timePerCharacter: string;
@@ -113,44 +121,75 @@ class Setup extends React.Component<Store & { onGameStart }, {
     const {
       players
     } = this.props;
-    const {
-      timePerCharacter,
-      timeToConference,
-    } = this.state;
+    const [ werewolfTeam, selfTeam, villagerTeam ] = [
+      C.filter(c => [Team.WEREWOLF, Team.WEREWOLF_ALLY].includes(c.team)),
+      C.filter(c => [Team.SELF, Team.UNKNOWN].includes(c.team)),
+      C.filter(c => [Team.VILLAGER].includes(c.team)),
+    ];
     return (
       <>
-        <div>
-          Room Members:
-        </div>
-        <div>
-          {players.map(p => <div key={p.playerId}>{p.name}</div>)}
-        </div>
+        <Row>
+          <Column sm={12}>
+            Room Members:
+          </Column>
+          <Column sm={12}>
+            {players.map(p => <div key={p.playerId}>{p.name}</div>)}
+          </Column>
+        </Row>
         <br />
+        <Row>
+          <Column md={6} sm={12}>
+            <TextInput label="Seconds per Character" onChange={this.changeTimePerCharacter} />
+          </Column>
+          <Column md={6} sm={12}>
+            <TextInput label="Time to Conference" onChange={this.changeTimeToConference} />
+          </Column>
+        </Row>
+        <Row>
+          <Column sm={12}>
+            Play <strong>{this.getNumPlayers()}</strong>
+          </Column>
+        </Row>
+        <Row>
+          <Column sm={12} md={4}>
+            <Header h={3}>Werewolves</Header>
+            {werewolfTeam.map(c => (
+              <div style={{ marginBottom: '8px' }}>
+                <Checkbox
+                  key={`cbox_${c.key}`}
+                  label={c.name}
+                  onChange={this.onCharacterChange}
+                />
+              </div>
+            ))}
+          </Column>
+          <Column sm={12} md={4}>
+            <Header h={3}>Villagers</Header>
+            {villagerTeam.map(c => (
+              <div style={{ marginBottom: '8px' }}>
+                <Checkbox
+                  key={`cbox_${c.key}`}
+                  label={c.name}
+                  onChange={this.onCharacterChange}
+                />
+              </div>
+            ))}
+          </Column>
+          <Column sm={12} md={4}>
+            <Header h={3}>Other</Header>
+            {selfTeam.map(c => (
+              <div style={{ marginBottom: '8px' }}>
+                <Checkbox
+                  key={`cbox_${c.key}`}
+                  label={c.name}
+                  onChange={this.onCharacterChange}
+                />
+              </div>
+            ))}
+          </Column>
+        </Row>
         <div>
-          <label htmlFor="characterTime">Seconds per Character: </label>
-          <input type="text" name="characterTime" onChange={this.changeTimePerCharacter} value={timePerCharacter} />
-        </div>
-        <div>
-          <label htmlFor="characterTime">Time to Conference: </label>
-          <input type="text" name="characterTime" onChange={this.changeTimeToConference} value={timeToConference} />
-        </div>
-        <div>
-          {C.map(c => (
-            <div key={`cbox_${c.key}`}>
-              <input
-                type="checkbox" id={c.key}
-                onChange={this.onCharacterChange}
-                value={c.name}
-              />
-              <label htmlFor={c.key}>{c.name}</label>
-            </div>
-          ))}
-        </div>
-        <div>
-          Play <strong>{this.getNumPlayers()}</strong>
-        </div>
-        <div>
-          <button onClick={this.startGame} disabled={!this.hasRightNumberPlayers()}>Start Game</button>
+          <Button onClick={this.startGame} disabled={!this.hasRightNumberPlayers()}>Start Game</Button>
         </div>
       </>
     );

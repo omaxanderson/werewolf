@@ -8,10 +8,17 @@ import { composeWithDevTools } from 'redux-devtools-extension';
 import { WebSocketAction } from '../IWebsocket';
 import Setup from './Setup';
 import Game from './Game';
-import { DispatchObject, GameOptions, ReduxAction, Store, } from './Interfaces';
+import { ReduxAction, Store, } from './Interfaces';
 import reducer from './reducers/Home';
+import {
+  Modal,
+  TextInput,
+  Button,
+} from '@omaxwellanderson/react-components';
 
-'./Interfaces';
+// idk how to configure webpack to not require this but this ensures
+// the css from the react components are included in the bundle
+require('@omaxwellanderson/react-components/dist/main.css');
 
 const WebSocketClient = WebSocket.w3cwebsocket;
 
@@ -21,21 +28,17 @@ declare global {
   }
 }
 
-export class Home extends React.Component<Store & {
-  dispatch: (obj: DispatchObject) => void;
-}, {
+export class Home extends React.Component<Store, {
   joined: boolean;
 }> {
   constructor(props) {
     super(props);
 
-    const roomId = window.location.pathname.slice(1);
     this.state = {
       joined: false,
     }
   }
 
-  // debugging purposes, delete before use
   componentDidMount(): void {
     const roomId = window.location.pathname.slice(1);
     if (roomId) {
@@ -43,6 +46,29 @@ export class Home extends React.Component<Store & {
         type: ReduxAction.SET_ROOM_ID,
         payload: roomId,
       });
+    }
+
+    if (typeof Storage !== 'undefined') {
+      const name = localStorage.getItem('name');
+      if (name) {
+        this.props.dispatch({
+          type: ReduxAction.SET_NAME,
+          payload: name,
+        });
+      }
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    const { roomId, name } = this.props;
+    if (
+      roomId
+      && name
+      && typeof Storage !== 'undefined'
+      && localStorage.getItem('joined') === roomId
+      && !this.state.joined
+    ) {
+      this.joinGame();
     }
   }
 
@@ -108,16 +134,17 @@ export class Home extends React.Component<Store & {
   };
 
   onNameChange = (e) => {
-    // this.setState({ name: e.target.value });
     this.props.dispatch({
       type: ReduxAction.SET_NAME,
       payload: e.target.value,
-    })
+    });
+    if (typeof Storage !== 'undefined') {
+      localStorage.setItem('name', e.target.value);
+    }
   };
 
   createNewGame = () => {
     const roomId = shortId();
-    // this.setState({ roomId }, () => window.history.pushState({}, '', roomId));
     window.history.pushState({}, '', roomId);
     this.props.dispatch({
       type: ReduxAction.SET_ROOM_ID,
@@ -126,21 +153,16 @@ export class Home extends React.Component<Store & {
   };
 
   joinGame = () => {
+    const { joined } = this.state;
+    if (joined) {
+      return;
+    }
+    const { roomId } = this.props;
     this.connectToWebsocket();
     this.setState({ joined: true });
-  };
-
-  sendWebSocketMessage = (message: {
-    action: WebSocketAction;
-    message?: any;
-    config?: GameOptions;
-  }) => {
-    const { client } = this.props;
-    const messageId = shortId();
-    client.send(JSON.stringify({
-      ...message,
-      messageId,
-    }))
+    if (typeof Storage !== 'undefined') {
+      localStorage.setItem('joined', roomId);
+    }
   };
 
   getBody = () => {
@@ -171,14 +193,21 @@ export class Home extends React.Component<Store & {
     )
   };
 
+  leaveGame = () => window.location.href = '/';
+
   render() {
-    const { client } = this.props;
+    const { client, name } = this.props;
+    const {
+      joined,
+    } = this.state;
     return (
       <div>
+        <div style={{ display: 'flex' }}>
+          {joined && <Button onClick={this.leaveGame}>Leave Game</Button>}
+        </div>
         {!client &&
           <div>
-              <label htmlFor="name">Name</label>
-              <input type="text" name="name" onChange={this.onNameChange}/>
+            <TextInput label="Name" onChange={this.onNameChange} />
           </div>
         }
         {this.getBody()}
