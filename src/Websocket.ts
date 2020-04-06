@@ -226,6 +226,10 @@ export default (server) => {
         case WebSocketAction.DEBUG__NEXT_CHARACTER:
           await nextCharacterTurn(webSocketServer, ws.roomId, ws.gameId);
           break;
+        case WebSocketAction.SET_COLOR:
+          ws.color = m.message;
+          sendPlayerList(webSocketServer, ws);
+          break;
         case WebSocketAction.CHARACTER_ACTION:
           if (ws?.actionTaken === ws.gameId) {
             break;
@@ -311,3 +315,19 @@ export default (server) => {
     }))
   });
 };
+
+function sendPlayerList(wss: WebSocket.Server, ws: MyWebSocket) {
+  // notify room members of a new join
+  const clientsInRoom = getClientsInRoom(wss, ws.roomId);
+  const simplifiedClients = clientsInRoom.map((client: MyWebSocket) => ({
+    name: client.name,
+    color: client.color,
+    playerId: client.playerId,
+  }));
+  clientsInRoom.forEach(client => {
+    client.send(JSON.stringify({
+      action: WebSocketAction.LIST_PLAYERS,
+      players: simplifiedClients,
+    }));
+  });
+}

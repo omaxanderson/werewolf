@@ -48,7 +48,6 @@ export default (state: Store = initialState, action) => {
         players: payload,
       };
     case ReduxAction.SET_WS_CLIENT:
-      console.log('client payload', payload);
       return {
         ...state,
         client: payload,

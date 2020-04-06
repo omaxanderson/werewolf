@@ -12,10 +12,34 @@
 }
 
 .Me {
-  margin-bottom: 30px;
   border-bottom: 1px solid #ccc;
+  margin-bottom: 15px;
+}
+
+.x {
+  display: flex;
+  justify-content: center;
 }
 
 .Title {
+  margin-top: 5px;
+  display: flex;
+  justify-content: center;
   font-weight: bold;
+}
+
+.Box {
+  min-height: 20px;
+  border: 1px solid #ccc;
+  padding: 15px;
+  transition: 1s ease-in;
+
+  &__Header {
+    margin-top: 0px;
+  }
+
+  &__Important {
+    border: 1px solid red;
+    transition: none;
+  }
 }

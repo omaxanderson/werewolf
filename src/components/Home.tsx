@@ -2,19 +2,28 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import shortId from '../util/shortId';
 import * as WebSocket from 'websocket';
+import cloneDeep from 'lodash/cloneDeep';
 import { connect, Provider } from 'react-redux';
 import { applyMiddleware, createStore } from 'redux';
 import { composeWithDevTools } from 'redux-devtools-extension';
+import { SliderPicker } from 'react-color';
+import * as ReactColor from 'react-color';
 import { WebSocketAction } from '../IWebsocket';
 import Setup from './Setup';
 import Game from './Game';
 import { ReduxAction, Store, } from './Interfaces';
 import reducer from './reducers/Home';
 import {
-  Modal,
   TextInput,
   Button,
+  Row,
+  Column,
+  Modal,
+  // idk why it's yelling but it compiles fine so whatever
+  // @ts-ignore
 } from '@omaxwellanderson/react-components';
+import style from './Home.scss';
+import Player from './Player';
 
 // idk how to configure webpack to not require this but this ensures
 // the css from the react components are included in the bundle
@@ -30,12 +39,14 @@ declare global {
 
 export class Home extends React.Component<Store, {
   joined: boolean;
+  isChangingColor: boolean | { hex: string };
 }> {
   constructor(props) {
     super(props);
 
     this.state = {
       joined: false,
+      isChangingColor: false,
     }
   }
 
@@ -194,23 +205,84 @@ export class Home extends React.Component<Store, {
   };
 
   leaveGame = () => window.location.href = '/';
+  onToggleChangeColor = () => this.setState({ isChangingColor: !this.state.isChangingColor });
+
+  onChangeColor = () => {
+    const { isChangingColor } = this.state;
+    const { hex = false } = typeof isChangingColor === 'object' ? isChangingColor : {};
+    const { client } = this.props;
+    if (client && hex) {
+      client.send(JSON.stringify({
+        action: WebSocketAction.SET_COLOR,
+        message: hex,
+      }));
+    }
+    this.setState({ isChangingColor: false });
+  };
 
   render() {
-    const { client, name } = this.props;
+    const { client, players, playerId } = this.props;
     const {
       joined,
+      isChangingColor,
     } = this.state;
+
+    // doing some wonky stuff here but hey it works
+    const me = cloneDeep(players?.find(p => p.playerId === playerId));
+    let { color = '#fff' } = me || {};
+    if (typeof isChangingColor === 'object' && me) {
+      color = isChangingColor.hex;
+      me.color = color;
+    }
     return (
       <div>
-        <div style={{ display: 'flex' }}>
-          {joined && <Button onClick={this.leaveGame}>Leave Game</Button>}
-        </div>
+        <Modal
+          isOpen={isChangingColor}
+          header="Change Color"
+          footerActions={[
+            {
+              type: 'secondary',
+              label: 'Cancel',
+              onClick: () => this.setState({ isChangingColor: false }),
+            },
+            {
+              type: 'primary',
+              label: 'Submit',
+              onClick: this.onChangeColor,
+            },
+          ]}
+        >
+          <div style={{ position: 'relative', height: '100%' }}>
+            <SliderPicker
+              color={typeof isChangingColor === 'object' ? isChangingColor : color}
+              onChange={c => this.setState({ isChangingColor: c })}
+            />
+            <div style={{
+              marginTop: '15px',
+            }}>
+              <Player player={me} highlighted={false} size="lg" />
+            </div>
+          </div>
+        </Modal>
         {!client &&
           <div>
             <TextInput label="Name" onChange={this.onNameChange} />
           </div>
         }
-        {this.getBody()}
+        <Row>
+          <Column sm={12}>
+            {this.getBody()}
+          </Column>
+        </Row>
+        <hr />
+        <Row>
+          <Column sm={12}>
+            <div className={style.Buttons} >
+              {joined && <Button onClick={this.leaveGame}>Leave Game</Button>}
+              <Button onClick={this.onToggleChangeColor}>Change Color</Button>
+            </div>
+          </Column>
+        </Row>
       </div>
     )
   }

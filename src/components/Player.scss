@@ -1,4 +1,7 @@
 $spacing: 10px;
+$sm: 100px;
+$md: 150px;
+$lg: 200px;
 
 .Overlay {
   position: absolute;
@@ -16,8 +19,6 @@ $spacing: 10px;
 
 .Player {
   position: relative;
-  height: 150px;
-  width: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,8 +26,27 @@ $spacing: 10px;
   cursor: pointer;
   box-sizing: border-box;
 
+  & + & {
+    margin-left: 10px;
+  }
+
   &__Highlighted {
     border: 3px solid #24e0d4;
+  }
+
+  &__Small {
+    height: $sm;
+    width: $sm;
+  }
+
+  &__Medium {
+    height: $md;
+    width: $md;
+  }
+
+  &__Large {
+    height: $lg;
+    width: $lg;
   }
 }
 

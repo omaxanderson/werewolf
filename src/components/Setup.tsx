@@ -11,6 +11,7 @@ import {
   Checkbox,
   Header,
 } from '@omaxwellanderson/react-components';
+import Players from './Players';
 
 class Setup extends React.Component<Store & { onGameStart }, {
   timePerCharacter: string;
@@ -83,8 +84,6 @@ class Setup extends React.Component<Store & { onGameStart }, {
     const {
       value,
     } = e.target;
-    console.log('value', value);
-    console.log(e);
     const characters = cloneDeep(this.state.characters);
     if (checked) {
       characters.push(C.find(c => c.key === value));
@@ -133,13 +132,17 @@ class Setup extends React.Component<Store & { onGameStart }, {
       <>
         <Row>
           <Column sm={12}>
-            Room Members:
+            <h3 style={{ marginBottom: '0px' }}>
+              In the Game
+            </h3>
           </Column>
           <Column sm={12}>
-            {players.map(p => <div key={p.playerId}>{p.name}</div>)}
+            <Players
+              size="sm"
+              players={players}
+            />
           </Column>
         </Row>
-        <br />
         <Row>
           <Column md={6} sm={12}>
             <TextInput
@@ -211,7 +214,13 @@ class Setup extends React.Component<Store & { onGameStart }, {
           </Column>
         </Row>
         <div>
-          <Button onClick={this.startGame} disabled={!this.hasRightNumberPlayers()}>Start Game</Button>
+          <Button
+            onClick={this.startGame}
+            disabled={!this.hasRightNumberPlayers()}
+            type="primary"
+          >
+            Start Game
+          </Button>
         </div>
       </>
     );

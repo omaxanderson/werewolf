@@ -1,19 +1,25 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import classNames from 'classnames';
 import { Character, Team } from "./Characters";
 import { IPlayer } from './Interfaces';
-import Player from './Player';
 import { Store } from './Interfaces';
 import Ribbon from './Ribbon';
 import style from './Game.scss';
 import { WebSocketAction } from '../IWebsocket';
 import {
   Button,
+  Row,
+  Column,
+  Header,
 } from '@omaxwellanderson/react-components';
+import Players from './Players';
 
 class Game extends React.Component<Store, {
   middleCardsSelected: number[];
   playersSelected: IPlayer[];
+  infoDidChange: boolean;
+  resultsDidChange: boolean;
 }> {
   private interval;
   constructor(props) {
@@ -22,6 +28,21 @@ class Game extends React.Component<Store, {
     this.state = {
       middleCardsSelected: [],
       playersSelected: [],
+      infoDidChange: false,
+      resultsDidChange: false,
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState): void {
+    if (prevProps.extraInfo !== this.props.extraInfo) {
+      this.setState({ infoDidChange: true }, () => {
+        setTimeout(() => this.setState({ infoDidChange: false }), 5000);
+      });
+    }
+    if (prevProps.actionResult !== this.props.actionResult) {
+      this.setState({ resultsDidChange: true }, () => {
+        setTimeout(() => this.setState({ resultsDidChange: false }), 5000);
+      });
     }
   }
 
@@ -245,24 +266,41 @@ class Game extends React.Component<Store, {
     return (
       <>
         {timer}
-        {extraJsx}
-        {actionResultMessage && <div>{actionResultMessage}</div>}
-        <div>Character Order</div>
+        <Row>
+          <Column sm={6}>
+            <div className={classNames(style.Box, {
+              [style.Box__Important]: this.state.infoDidChange,
+            })}>
+              <h3 className={style.Box__Header}>
+                Info
+              </h3>
+              {extraJsx || <div>It's not your turn.</div>}
+            </div>
+          </Column>
+          <Column sm={6}>
+            <div className={classNames(style.Box, {
+              [style.Box__Important]: this.state.resultsDidChange,
+            })}>
+              <h3 className={style.Box__Header}>
+                Results
+              </h3>
+              <div>
+                {actionResultMessage ? actionResultMessage : 'No results to see yet.'}
+              </div>
+            </div>
+          </Column>
+        </Row>
+        <Header h={2} spacing="sm">Character Order</Header>
         <div className={style.RibbonContainer}>
           <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
         </div>
-        <div>Players</div>
-        <div className={style.PlayerContainer}>
-          {players.map(player => (
-            <Player
-              key={`player_${player.playerId}`}
-              player={player}
-              onPlayerClick={onPlayerClick}
-              highlighted={this.state.playersSelected.some(p => p.playerId === player.playerId)}
-            />
-          ))}
-        </div>
-        Middle Cards
+        <Header h={2}>Players</Header>
+        <Players
+          players={players}
+          playersSelected={this.state.playersSelected}
+          onPlayerClick={onPlayerClick}
+        />
+        <Header h={2}>Middle Cards</Header>
         <div className={style.RibbonContainer}>
           <Ribbon characters={[
             { name: 'Middle Card', color: '#ACAEB0', key: 'm1', highlighted: this.state.middleCardsSelected.includes(0) },
@@ -326,12 +364,10 @@ class Game extends React.Component<Store, {
         {gameResults && <div>The results are in!</div>}
         {startingCharacter && !gameResults &&
           <div className={style.Me}>
-            <div>You are the
-              {' '}
-              <span className={style.Title}>
-                {startingCharacter.name}
-              </span>
-            </div>
+            <div className={style.x}>You are the</div>
+            <h2 className={style.Title}>
+              {startingCharacter.name}
+            </h2>
           </div>
         }
         {jsx}
