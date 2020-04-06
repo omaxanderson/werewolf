@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 import { Character } from './Characters';
 import style from './Ribbon.scss';
 
@@ -7,7 +8,7 @@ type RibbonItem = Pick<
   'color' |
   'name' |
   'key'
-  >;
+> & { highlighted?: boolean };
 
 type OnClickFunc = (val: number) => void;
 
@@ -25,9 +26,11 @@ class Ribbon extends React.Component<{
     return (
       <div className={style.RibbonContainer}>
         {characters.map((c, i) => {
-          const className = i === idx
+          const className = classnames(i === idx
             ? style['RibbonItem--active']
-            : style.RibbonItem;
+            : style.RibbonItem, {
+            [style.RibbonItem__highlighted]: c.highlighted,
+          });
           return (
             <div
               key={c.key}

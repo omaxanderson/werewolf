@@ -8,10 +8,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
 
   &--active {
     @extend .RibbonItem;
     border: 2px solid #10aafa;
+  }
+
+  &__highlighted {
+    border: 3px solid #24e0d4;
   }
 
   & + .RibbonItem {

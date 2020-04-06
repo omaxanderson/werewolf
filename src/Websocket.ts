@@ -164,7 +164,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
 
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
-    const c = 'Drunk';
+    const c = 'Seer';
     if (a.name === c) {
       return 1;
     }

@@ -27,20 +27,18 @@ class Setup extends React.Component<Store & { onGameStart }, {
     };
   }
 
-  changeTimePerCharacter = (e) => {
-    const { value } = e.target;
+  changeTimePerCharacter = (e, value) => {
     if (value !== '' && isNaN(parseInt(value))) {
       return;
     }
     this.setState({ timePerCharacter: value });
   };
 
-  changeTimeToConference = (e) => {
-    const { value } = e.target;
+  changeTimeToConference = (e, value) => {
     if (value !== '' && this.parseTime(value) === 0) {
       return;
     }
-    this.setState({ timeToConference: e.target.value });
+    this.setState({ timeToConference: value });
   };
 
   parseTime = (time: string): number => {
@@ -81,16 +79,17 @@ class Setup extends React.Component<Store & { onGameStart }, {
 
   getNumPlayers = () => this.state.characters.length <= 3 ? 0 : this.state.characters.length - 3;
 
-  onCharacterChange = (e) => {
+  onCharacterChange = (checked, e) => {
     const {
       value,
-      checked,
     } = e.target;
+    console.log('value', value);
+    console.log(e);
     const characters = cloneDeep(this.state.characters);
     if (checked) {
-      characters.push(C.find(c => c.name === value));
+      characters.push(C.find(c => c.key === value));
     } else {
-      characters.splice(characters.findIndex(c => c.name === value), 1);
+      characters.splice(characters.findIndex(c => c.key === value), 1);
     }
     this.setState({ characters });
   };
@@ -121,6 +120,10 @@ class Setup extends React.Component<Store & { onGameStart }, {
     const {
       players
     } = this.props;
+    const {
+      timePerCharacter,
+      timeToConference,
+    } = this.state;
     const [ werewolfTeam, selfTeam, villagerTeam ] = [
       C.filter(c => [Team.WEREWOLF, Team.WEREWOLF_ALLY].includes(c.team)),
       C.filter(c => [Team.SELF, Team.UNKNOWN].includes(c.team)),
@@ -139,10 +142,18 @@ class Setup extends React.Component<Store & { onGameStart }, {
         <br />
         <Row>
           <Column md={6} sm={12}>
-            <TextInput label="Seconds per Character" onChange={this.changeTimePerCharacter} />
+            <TextInput
+              label="Seconds per Character"
+              onChange={this.changeTimePerCharacter}
+              value={timePerCharacter}
+            />
           </Column>
           <Column md={6} sm={12}>
-            <TextInput label="Time to Conference" onChange={this.changeTimeToConference} />
+            <TextInput
+              label="Time to Conference"
+              onChange={this.changeTimeToConference}
+              value={timeToConference}
+            />
           </Column>
         </Row>
         <Row>
@@ -154,10 +165,14 @@ class Setup extends React.Component<Store & { onGameStart }, {
           <Column sm={12} md={4}>
             <Header h={3}>Werewolves</Header>
             {werewolfTeam.map(c => (
-              <div style={{ marginBottom: '8px' }}>
+              <div
+                style={{ marginBottom: '8px' }}
+                key={`checkbox_${c.key}`}
+              >
                 <Checkbox
                   key={`cbox_${c.key}`}
                   label={c.name}
+                  value={c.key}
                   onChange={this.onCharacterChange}
                 />
               </div>
@@ -166,10 +181,13 @@ class Setup extends React.Component<Store & { onGameStart }, {
           <Column sm={12} md={4}>
             <Header h={3}>Villagers</Header>
             {villagerTeam.map(c => (
-              <div style={{ marginBottom: '8px' }}>
+              <div
+                style={{ marginBottom: '8px' }}
+                key={`checkbox_${c.key}`}
+              >
                 <Checkbox
-                  key={`cbox_${c.key}`}
                   label={c.name}
+                  value={c.key}
                   onChange={this.onCharacterChange}
                 />
               </div>
@@ -178,10 +196,14 @@ class Setup extends React.Component<Store & { onGameStart }, {
           <Column sm={12} md={4}>
             <Header h={3}>Other</Header>
             {selfTeam.map(c => (
-              <div style={{ marginBottom: '8px' }}>
+              <div
+                style={{ marginBottom: '8px' }}
+                key={`checkbox_${c.key}`}
+              >
                 <Checkbox
                   key={`cbox_${c.key}`}
                   label={c.name}
+                  value={c.key}
                   onChange={this.onCharacterChange}
                 />
               </div>

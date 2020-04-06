@@ -7,14 +7,13 @@ import { Store } from './Interfaces';
 import Ribbon from './Ribbon';
 import style from './Game.scss';
 import { WebSocketAction } from '../IWebsocket';
-
-type Phase = Character | 'conference';
-
-const INTERVAL = 1000;
+import {
+  Button,
+} from '@omaxwellanderson/react-components';
 
 class Game extends React.Component<Store, {
   middleCardsSelected: number[];
-  playersSelected: Player[];
+  playersSelected: IPlayer[];
 }> {
   private interval;
   constructor(props) {
@@ -208,6 +207,7 @@ class Game extends React.Component<Store, {
                     action: WebSocketAction.CHARACTER_ACTION,
                     params: { playersSelected },
                   }));
+                  // setTimeout(() => this.setState({ playersSelected: [] }), 5000);
                 }
               });
             }
@@ -236,14 +236,12 @@ class Game extends React.Component<Store, {
     const isDaylight = gameState.currentIdx === gameOptions.characters.length;
     if (isDaylight && !this.interval) {
       this.interval = setInterval(() => {
-        // force a rerender
         this.forceUpdate();
       }, 1000);
     }
 
     const timer = this.getTimerJsx();
 
-    // doing this wonky + 1 because we're adding an element to the array
     return (
       <>
         {timer}
@@ -260,15 +258,16 @@ class Game extends React.Component<Store, {
               key={`player_${player.playerId}`}
               player={player}
               onPlayerClick={onPlayerClick}
+              highlighted={this.state.playersSelected.some(p => p.playerId === player.playerId)}
             />
           ))}
         </div>
         Middle Cards
         <div className={style.RibbonContainer}>
           <Ribbon characters={[
-            { name: 'Middle Card', color: '#ACAEB0', key: 'm1' },
-            { name: 'Middle Card', color: '#ACAEB0', key: 'm2' },
-            { name: 'Middle Card', color: '#ACAEB0', key: 'm3'  },
+            { name: 'Middle Card', color: '#ACAEB0', key: 'm1', highlighted: this.state.middleCardsSelected.includes(0) },
+            { name: 'Middle Card', color: '#ACAEB0', key: 'm2', highlighted: this.state.middleCardsSelected.includes(1)  },
+            { name: 'Middle Card', color: '#ACAEB0', key: 'm3', highlighted: this.state.middleCardsSelected.includes(2)  },
           ]} idx={-1} onClick={onMiddleCardClick}/>
         </div>
       </>
@@ -323,7 +322,7 @@ class Game extends React.Component<Store, {
     let jsx = this.getGameBody();
     return (
       <>
-        <button onClick={this.debugStepForward}>Next</button>
+        <Button onClick={this.debugStepForward}>Next</Button>
         {gameResults && <div>The results are in!</div>}
         {startingCharacter && !gameResults &&
           <div className={style.Me}>
