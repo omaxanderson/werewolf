@@ -41,7 +41,7 @@ export const clientsFixture = [
     name: 'Player 4',
     roomId: 'r1',
     gameId: '123',
-    playerId: 'p2',
+    playerId: 'p4',
     color: '#aaa',
     character: getCharacter('Drunk'),
     startingCharacter: getCharacter('Drunk'),

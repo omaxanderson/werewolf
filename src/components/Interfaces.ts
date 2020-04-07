@@ -28,8 +28,9 @@ export enum ReduxAction {
 }
 
 export interface ActionResponse {
-  result: Character[];
-  message: string;
+  result: Character[]; // the character they become
+  message: string;     // message
+  info?: ICharacterExtraData;  // extra info i.e. doppel becomes minion, gets allwerewolves
 }
 
 export interface GameState extends GameOptions {
@@ -88,6 +89,6 @@ export interface ICharacterExtraData {
 }
 
 export interface CharacterActionParams {
-  playersSelected?: MyWebSocket[];
+  playersSelected?: IPlayer[];
   middleCardsSelected?: number[];
 }

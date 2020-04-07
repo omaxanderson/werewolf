@@ -1,7 +1,13 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
-import { ActionResponse, CharacterActionParams, ICharacter, ICharacterExtraData } from './components/Interfaces';
+import {
+  ActionResponse,
+  CharacterActionParams,
+  ICharacter,
+  ICharacterExtraData,
+  IPlayer
+} from './components/Interfaces';
 
 export const getCharacterTurnInfo = (
   currentCharacter: ICharacter,
@@ -9,31 +15,40 @@ export const getCharacterTurnInfo = (
   client: MyWebSocket,
 ): ICharacterExtraData => {
   const { startingCharacter } = client;
+  const doppelgangerInfoTurns = {
+    Werewolf: ['Werewolf', 'Mystic Wolf', 'Doppelganger Werewolf', 'Doppelganger Mystic Wolf'],
+    Mason: ['Mason', 'Doppelganger Mason'],
+    Minion: ['Minion', 'Doppelganger Minion'],
+  };
+
+  // todo write tests for this
+  if (Object.keys(doppelgangerInfoTurns).includes(currentCharacter.name)) {
+    // we know we're sending info to other people
+    if (!doppelgangerInfoTurns[currentCharacter.name]?.includes(startingCharacter.name)) {
+      return {};
+    }
+  } else {
+    // anyone who isn't the current turn's role gets nothing
+    if (startingCharacter.name !== currentCharacter.name) {
+      return {};
+    }
+  }
   switch (currentCharacter.name) {
     // Werewolves need to know other werewolves
+    case 'Doppelganger Minion': // special case that we send from handle action
     case 'Werewolf':
-      // if current char is werewolf and you are not a werewolf
-      if (startingCharacter.team !== Team.WEREWOLF) {
-        break;
-      }
     case 'Minion':
-      const { name } = startingCharacter;
-      if (name.includes('Werewolf') || name.includes('Minion') || name.includes('Wolf')) {
-        // right now, if the current character is any of these it'll send everyone that info
-        const allWerewolves: MyWebSocket[] = [];
-        clients.forEach(c => {
-          if (c.startingCharacter.team === Team.WEREWOLF) {
-            allWerewolves.push(c);
-          }
-        });
-        return { allWerewolves };
-      }
+      // right now, if the current character is any of these it'll send everyone that info
+      const allWerewolves: MyWebSocket[] = [];
+      clients.forEach(c => {
+        if (c.startingCharacter.team === Team.WEREWOLF) {
+          allWerewolves.push(c);
+        }
+      });
+      return { allWerewolves };
       break;
     case 'Doppelganger Mason':
     case 'Mason':
-      if (startingCharacter.name.includes('Mason')) {
-        break;
-      }
       const allMasons: MyWebSocket[] = [];
       clients.forEach(c => {
         if (['Mason', 'Doppelganger Mason'].includes(c.startingCharacter.name)) {
@@ -69,7 +84,7 @@ export const getCharacterTurnInfo = (
   return {};
 };
 
-const findSelectedPlayerCharacter = (clients: MyWebSocket[], player: MyWebSocket): Character => {
+const findSelectedPlayerCharacter = (clients: MyWebSocket[], player: IPlayer): Character => {
   let character: Character;
   clients.forEach(c => {
     if (c.playerId === player.playerId) {
@@ -114,10 +129,17 @@ export const handleCharacterActions = (
         const newDoppelganger = cloneDeep(findSelectedPlayerCharacter(clients, first));
         const originalName = newDoppelganger.name;
         newDoppelganger.name = `Doppelganger ${newDoppelganger.name}`;
-        response.result = [newDoppelganger];
-        response.message = `You are now the ${newDoppelganger.name}. ${actionMap[originalName] || ''}`;
         // now set that as the doppelgangers current character
         player.startingCharacter = newDoppelganger;
+        response.result = [newDoppelganger];
+        response.message = `You are now the ${newDoppelganger.name}. ${actionMap[originalName] || ''}`;
+        // todo when they become minion need to send relevant data back
+        if (originalName === 'Minion') {
+          const extraMinionInfo = getCharacterTurnInfo({
+            name: originalName,
+          }, clients, player);
+          response.info = extraMinionInfo;
+        }
         return response;
       }
       break;
@@ -186,7 +208,7 @@ export const handleCharacterActions = (
     case 'Doppelganger Drunk':
     case 'Drunk':
       // splice middle cards with current
-      const [drunkNewCharacter] = middleCards.splice(firstMiddle, 1, character);
+      const [drunkNewCharacter] = middleCards.splice(firstMiddle, 1, player.character);
       player.character = drunkNewCharacter;
       response.message = 'Success!';
       return response;

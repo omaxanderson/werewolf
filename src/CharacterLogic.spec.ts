@@ -1,6 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
-import { Character, Team } from './components/Characters';
+import characters, { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
 import { clientsFixture, getCharacter, middleCardsFixture, midGameClients } from './Fixtures.spec';
 import { isCharacter, IWebSocket } from './components/Interfaces';
@@ -15,6 +15,15 @@ const characterTemplate: Character = {
   team: -1,
   doppel: true,
 };
+
+function createClient(name: string, startingCharacterName: string, characterName: string = '') {
+  return {
+    name,
+    startingCharacter: characters.find(c => c.name === startingCharacterName),
+    character: characters.find(c => c.name === (characterName || startingCharacterName)),
+    playerId: v4(),
+  } as MyWebSocket;
+}
 
 describe('Character Extra Info Logic', () => {
   let myClients: MyWebSocket[];
@@ -45,6 +54,7 @@ describe('Character Extra Info Logic', () => {
     const info = getCharacterTurnInfo(
       { name: 'Werewolf' },
       myClients,
+      createClient('max', 'Werewolf'),
     );
 
     expect(info.allWerewolves.length).toBe(2);
@@ -64,6 +74,7 @@ describe('Character Extra Info Logic', () => {
     const info = getCharacterTurnInfo(
       { name: 'Minion' },
       myClients,
+      createClient('max', 'Minion'),
     );
 
     expect(info.allWerewolves.length).toBe(2);
@@ -82,6 +93,7 @@ describe('Character Extra Info Logic', () => {
     const info = getCharacterTurnInfo(
       { name: 'Mason' },
       myClients,
+      createClient('max', 'Mason'),
     );
 
     expect(info.allMasons.length).toBe(2);
@@ -101,10 +113,39 @@ describe('Character Extra Info Logic', () => {
     const info = getCharacterTurnInfo(
       { name: 'Insomniac' },
       myClients,
+      createClient('max', 'Insomniac'),
     );
 
     expect(info.insomniac.name).toBe('Werewolf');
-  })
+  });
+
+  it('Should not return any extra info to the seer on Werewolf turn', () => {
+    myClients = cloneDeep(clientsFixture);
+    const player = myClients.find(c => c.startingCharacter.name === 'Seer');
+
+    const info = getCharacterTurnInfo(
+      createClient('abc', 'Werewolf').character,
+      myClients,
+      player,
+    );
+
+    expect(info).toEqual({});
+  });
+
+
+  it('Should not return any extra info to Mason on Werewolf turn', () => {
+    myClients = cloneDeep(clientsFixture);
+    myClients.push(createClient('hello123', 'Mason'));
+    const player = myClients.find(c => c.startingCharacter.name === 'Mason');
+
+    const info = getCharacterTurnInfo(
+      createClient('abc', 'Werewolf').character,
+      myClients,
+      player,
+    );
+
+    expect(info).toEqual({});
+  });
 });
 
 describe('Character Actions', () => {
@@ -129,7 +170,10 @@ describe('Character Actions', () => {
       middleCards,
     );
 
-    expect(card).toEqual(getCharacter('Troublemaker'));
+    expect(card).toEqual({
+      result: [getCharacter('Troublemaker')],
+      message: 'You have viewed the Troublemaker.',
+    });
   });
 
   it('Seer should return the selected players card', () => {
@@ -147,7 +191,10 @@ describe('Character Actions', () => {
       middleCards,
     );
 
-    expect(card).toEqual(getCharacter('Insomniac'));
+    expect(card).toEqual({
+      result: [getCharacter('Insomniac')],
+      message: 'You saw the Insomniac.',
+    });
   });
 
   it('Seer should return two middle cards', () => {
@@ -165,7 +212,7 @@ describe('Character Actions', () => {
       middleCards,
     );
 
-    expect(card).toEqual([
+    expect(card.result).toEqual([
       middleCards[1],
       middleCards[2],
     ]);
@@ -179,15 +226,15 @@ describe('Character Actions', () => {
     const params = {
       playersSelected: [myClients.find(c => c.startingCharacter.name === 'Troublemaker')],
     };
-    const card = handleCharacterActions(
+    const { message, result } = handleCharacterActions(
       myClients,
       player,
       params,
       middleCards,
     );
 
-    if (isCharacter(card)) {
-      expect(card.name).toBe('Troublemaker');
+    if (isCharacter(result[0])) {
+      expect(result[0].name).toBe('Troublemaker');
     } else {
       expect(true).toBe(false);
     }
@@ -210,14 +257,15 @@ describe('Character Actions', () => {
         myClients.find(c => c.startingCharacter.name === 'Werewolf'),
       ],
     };
-    const result = handleCharacterActions(
+    const { result, message } = handleCharacterActions(
       myClients,
       player,
       params,
       middleCards,
     );
 
-    expect(result).toBe(true);
+    expect(result).toEqual([]);
+    expect(message).toBe('Success!');
     const originalInsomniac = myClients.find(c => c.startingCharacter.name === 'Insomniac');
     const originalWerewolf = myClients.find(c => c.startingCharacter.name === 'Werewolf');
     expect(originalInsomniac.character.name).toBe('Werewolf');
@@ -233,14 +281,15 @@ describe('Character Actions', () => {
     const params = {
       middleCardsSelected: [1],
     };
-    const result = handleCharacterActions(
+    const { result, message } = handleCharacterActions(
       myClients,
       player,
       params,
       middleCards,
     );
 
-    expect(result).toBe(true);
+    expect(result).toEqual([]);
+    expect(message).toBe('Success!');
     expect(middleCards[1].name).toBe('Drunk');
     expect(player.character.name).toBe(originalMiddleCardName);
   });
@@ -260,7 +309,7 @@ describe('Character Actions', () => {
       middleCards,
     );
 
-    expect(result.message).toEqual('You are now the Doppelganger Insomniac.');
+    expect(result.message.trim()).toEqual('You are now the Doppelganger Insomniac.');
     expect(player.startingCharacter.name).toBe('Doppelganger Insomniac');
   });
 
@@ -294,5 +343,149 @@ describe('Character Actions', () => {
     expect(result.message.trim()).toEqual('You are now the Doppelganger Werewolf.');
     expect(player.startingCharacter.name).toBe('Doppelganger Werewolf');
     expect(player.character.name).toBe('Doppelganger');
+  });
+
+  it('Doppelganger who views Minion should receive werewolf list', () => {
+    myClients.push(createClient('Player Zero', 'Doppelganger'));
+    myClients.push(createClient('Extra WW', 'Werewolf'));
+    myClients.push(createClient('Minion Man', 'Minion'));
+    const player = myClients.find(c => c.startingCharacter.name === 'Doppelganger');
+    const params = {
+      playersSelected: [myClients.find(c => c.startingCharacter.name === 'Minion')],
+    };
+    const result = handleCharacterActions(
+      myClients,
+      player,
+      params,
+      middleCards,
+    );
+
+    expect(result.message.trim()).toEqual('You are now the Doppelganger Minion.');
+    expect(player.startingCharacter.name).toBe('Doppelganger Minion');
+    expect(player.character.name).toBe('Doppelganger');
+
+    expect(result.result.length).toBe(1);
+    expect(result.info?.allWerewolves?.length).toBe(2);
+    expect(result.info?.allWerewolves?.map(w => w.name)).toEqual(['Player 1', 'Extra WW']);
+  });
+
+  it('Doppelganger Drunk should swap cards', () => {
+    myClients.push(createClient('Player Zero', 'Doppelganger'));
+    const player = myClients.find(c => c.startingCharacter.name === 'Doppelganger');
+    const params = {
+      playersSelected: [myClients.find(c => c.character.name === 'Drunk')],
+    };
+    const originalMiddleCards = cloneDeep(middleCards);
+    const result = handleCharacterActions(
+      myClients,
+      player,
+      params,
+      middleCards,
+    );
+
+    expect(player.character.name).toBe('Doppelganger');
+    expect(player.startingCharacter.name).toBe('Doppelganger Drunk');
+
+    const swapResult = handleCharacterActions(
+      myClients,
+      player,
+      { middleCardsSelected: [1] },
+      middleCards,
+    );
+
+    expect(swapResult.result).toEqual([]);
+    expect(swapResult.message).toEqual('Success!');
+
+    expect(middleCards[1]).toEqual(getCharacter('Doppelganger'));
+    expect(player.character).toEqual(originalMiddleCards[1]);
+  });
+
+  it('Doppelganger Mystic Wolf should get all werewolves on Werewolf turn', () => {
+    myClients.push(createClient('Player Zero', 'Doppelganger'));
+    myClients.push(createClient('Mystic Wolf Player', 'Mystic Wolf'));
+    const player = myClients.find(c => c.startingCharacter.name === 'Doppelganger');
+    const params = {
+      playersSelected: [myClients.find(c => c.character.name === 'Mystic Wolf')],
+    };
+    const result = handleCharacterActions(
+      myClients,
+      player,
+      params,
+      middleCards,
+    );
+    // doppelganger is now doppel mystic
+
+    expect(player.character.name).toBe('Doppelganger');
+    expect(player.startingCharacter.name).toBe('Doppelganger Mystic Wolf');
+    expect(result.message).toBe(`You are now the Doppelganger Mystic Wolf. You may click on another player's card to view that card.`);
+
+    const viewedClient = myClients.find(c => c.character.name === 'Seer');
+
+    const viewResult = handleCharacterActions(
+      myClients,
+      player,
+      { playersSelected: [viewedClient] },
+      middleCards,
+    );
+
+    expect(viewResult.result).toEqual([viewedClient.character]);
+    expect(viewResult.message).toEqual(`You have viewed the Seer.`);
+
+    const werewolfTurnInfo = getCharacterTurnInfo(
+      createClient('hi', 'Werewolf').character,
+      myClients,
+      player,
+    );
+    expect(werewolfTurnInfo.allWerewolves.length).toBe(3);
+    expect(werewolfTurnInfo.allWerewolves.map(c => c.startingCharacter.name)).toEqual([
+      'Werewolf',
+      'Doppelganger Mystic Wolf',
+      'Mystic Wolf',
+    ]);
+
+    const masonTurnInfo = getCharacterTurnInfo(
+      createClient('hi', 'Mason').character,
+      myClients,
+      player,
+    );
+    expect(masonTurnInfo.allMasons).toBeUndefined();
+  });
+
+  it('Doppelganger Mason should get all Masons on Mason turn', () => {
+    myClients.push(createClient('Player Zero', 'Doppelganger'));
+    myClients.push(createClient('Mason Player', 'Mason'));
+    const player = myClients.find(c => c.startingCharacter.name === 'Doppelganger');
+    const params = {
+      playersSelected: [myClients.find(c => c.character.name === 'Mason')],
+    };
+    const result = handleCharacterActions(
+      myClients,
+      player,
+      params,
+      middleCards,
+    );
+    // doppelganger is now doppel mystic
+
+    expect(player.character.name).toBe('Doppelganger');
+    expect(player.startingCharacter.name).toBe('Doppelganger Mason');
+    expect(result.message).toBe(`You are now the Doppelganger Mason. `);
+
+    const werewolfTurnInfo = getCharacterTurnInfo(
+      createClient('hi', 'Werewolf').character,
+      myClients,
+      player,
+    );
+    expect(werewolfTurnInfo.allWerewolves).toBeUndefined();
+
+    const masonTurnInfo = getCharacterTurnInfo(
+      createClient('hi', 'Mason').character,
+      myClients,
+      player,
+    );
+    expect(masonTurnInfo.allMasons.length).toBe(2);
+    expect(masonTurnInfo.allMasons.map(c => c.startingCharacter.name)).toEqual([
+      'Doppelganger Mason',
+      'Mason',
+    ]);
   });
 });
