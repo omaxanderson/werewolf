@@ -141,8 +141,27 @@ class Game extends React.Component<Store, {
         insomniac,
       } = extraInfo || {};
       switch (startingCharacter.name) {
+        case 'Doppelganger':
+          if (isMyTurn) {
+            onPlayerClick = (player) => {
+              if (player.playerId !== playerId) {
+                client.send(JSON.stringify({
+                  action: WebSocketAction.CHARACTER_ACTION,
+                  params: {
+                    playersSelected: [player],
+                  },
+                }));
+              } else {
+                alert('Don\'t choose yourself you walnut.');
+              }
+            };
+            extraJsx = <div>Select another player to become that role.</div>;
+          }
+          break;
+        case 'Doppelganger Mystic Wolf':
         case 'Mystic Wolf':
           if (isMyTurn) {
+            console.log('doppel here?');
             onPlayerClick = (player) => {
               if (player.playerId !== playerId) {
                 client.send(JSON.stringify({
@@ -159,6 +178,7 @@ class Game extends React.Component<Store, {
             break;
           }
         case 'Werewolf':
+        case 'Doppelganger Werewolf':
           if (!allWerewolves) {
             break;
           }
@@ -176,6 +196,7 @@ class Game extends React.Component<Store, {
             extraJsx = <div>Your other wolf is {otherWolf.name}</div>
           }
           break;
+        case 'Doppelganger Minion':
         case 'Minion':
           if (!allWerewolves) {
             break;
@@ -189,6 +210,7 @@ class Game extends React.Component<Store, {
           }
           break;
         case 'Mason':
+        case 'Doppelganger Mason':
           if (!allMasons) {
             break;
           }
@@ -201,6 +223,7 @@ class Game extends React.Component<Store, {
           }
           break;
         case 'Robber':
+        case 'Doppelganger Robber':
           onPlayerClick = (player) => {
             if (player.playerId !== playerId) {
               client.send(JSON.stringify({
@@ -216,6 +239,7 @@ class Game extends React.Component<Store, {
           extraJsx = <div>Click on a player to rob their card.</div>;
           break;
         case 'Seer':
+        case 'Doppelganger Seer':
           onPlayerClick = (player) => {
             if (player.playerId !== playerId) {
               client.send(JSON.stringify({
@@ -243,6 +267,7 @@ class Game extends React.Component<Store, {
           extraJsx = <div>Click on a player to see, or select two cards from the middle.</div>;
         break;
         case 'Troublemaker':
+        case 'Doppelganger Troublemaker':
           onPlayerClick = (player) => {
             const { playersSelected: currentlySelected } = this.state;
             const playersSelected = [...currentlySelected, player];
@@ -263,6 +288,7 @@ class Game extends React.Component<Store, {
           extraJsx = <div>Click on two players to swap them.</div>;
           break;
         case 'Drunk':
+        case 'Doppelganger Drunk':
           onMiddleCardClick = (idx: number) => client.send(JSON.stringify({
             action: WebSocketAction.CHARACTER_ACTION,
             params: {
@@ -272,6 +298,7 @@ class Game extends React.Component<Store, {
           extraJsx = <div>Click on a card in the middle to take that card</div>;
           break;
         case 'Insomniac':
+        case 'Doppelganger Insomniac':
           if (!insomniac) {
             break;
           }

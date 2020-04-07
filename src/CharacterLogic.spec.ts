@@ -4,6 +4,7 @@ import { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
 import { clientsFixture, getCharacter, middleCardsFixture, midGameClients } from './Fixtures.spec';
 import { isCharacter, IWebSocket } from './components/Interfaces';
+import { v4 } from 'uuid';
 
 type TestWebSocket = IWebSocket & { name: string };
 
@@ -11,7 +12,7 @@ const characterTemplate: Character = {
   name: '',
   key: '',
   order: 10,
-  team: Team.WEREWOLF,
+  team: -1,
   doppel: true,
 };
 
@@ -28,6 +29,7 @@ describe('Character Extra Info Logic', () => {
           ...characterTemplate
         },
         name: `Player ${i}`,
+        playerId: v4(),
       });
     }
     myClients = c;
@@ -37,6 +39,7 @@ describe('Character Extra Info Logic', () => {
     myClients.forEach((c, i) => {
       if ([0, 1].includes(i)) {
         c.startingCharacter.name = 'Werewolf';
+        c.startingCharacter.team = Team.WEREWOLF;
       }
     });
     const info = getCharacterTurnInfo(
@@ -55,6 +58,7 @@ describe('Character Extra Info Logic', () => {
     myClients.forEach((c, i) => {
       if ([0, 1].includes(i)) {
         c.startingCharacter.name = 'Werewolf';
+        c.startingCharacter.team = Team.WEREWOLF;
       }
     });
     const info = getCharacterTurnInfo(
@@ -239,5 +243,55 @@ describe('Character Actions', () => {
     expect(result).toBe(true);
     expect(middleCards[1].name).toBe('Drunk');
     expect(player.character.name).toBe(originalMiddleCardName);
+  });
+
+  it('Doppelganger should become a new character', () => {
+    if (!myClients.some(c => c.startingCharacter.name === 'Doppelganger')) {
+      myClients[0].startingCharacter.name = 'Doppelganger';
+    }
+    const player = myClients.find(c => c.startingCharacter.name === 'Doppelganger');
+    const params = {
+      playersSelected: [myClients.find(c => c.startingCharacter.name === 'Insomniac')],
+    };
+    const result = handleCharacterActions(
+      myClients,
+      player,
+      params,
+      middleCards,
+    );
+
+    expect(result.message).toEqual('You are now the Doppelganger Insomniac.');
+    expect(player.startingCharacter.name).toBe('Doppelganger Insomniac');
+  });
+
+  it('Doppelganger should become a werewolf', () => {
+    // @ts-ignore
+    myClients.push({
+      startingCharacter: {
+        ...characterTemplate,
+        name: 'Doppelganger',
+        team: Team.UNKNOWN,
+      },
+      character: {
+        ...characterTemplate,
+        name: 'Doppelganger',
+        team: Team.UNKNOWN,
+      },
+      name: 'Player Zero',
+      playerId: 'abc123',
+    });
+    const player = myClients.find(c => c.startingCharacter.name === 'Doppelganger');
+    const params = {
+      playersSelected: [myClients.find(c => c.startingCharacter.name === 'Werewolf')],
+    };
+    const result = handleCharacterActions(
+      myClients,
+      player,
+      params,
+      middleCards,
+    );
+
+    expect(result.message).toEqual('You are now the Doppelganger Werewolf.');
+    expect(player.startingCharacter.name).toBe('Doppelganger Werewolf');
   });
 });

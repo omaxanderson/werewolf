@@ -91,9 +91,11 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
       config.secondsToConference * 1000,
     );
   } else {
+    const t = (config.secondsPerCharacter
+      + (currentCharacter.name === 'Doppelganger' ? 15 : 0)) * 1000;
     setTimeout(
       () => nextCharacterTurn(wss, roomId, gameId),
-      config.secondsPerCharacter * 1000,
+      t,
     );
   }
 
@@ -138,7 +140,7 @@ const setupGame = async (config: GameOptions, roomId: string, wss: WebSocket.Ser
   // Add doppleganger characters when necessary
   const hasDoppelganger = charactersConfig.some(c => c.key === 'doppelganger');
   const characters = flatten(charactersConfig.map(c => {
-    return c.doppel && hasDoppelganger ? [c, {
+    return c.name === 'Insomniac' && hasDoppelganger ? [c, {
       ...c,
       name: `Doppelganger ${c.name}`,
       order: c.order + 1,
@@ -175,8 +177,8 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
 
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
-    const c = 'Werewolf';
-    if (a.name === c || a.name === 'Mystic Wolf' || a.name === 'Minion') {
+    const c = 'Doppelganger';
+    if (a.name === c) { // } || a.name === 'Mystic Wolf' || a.name === 'Minion') {
       return 1;
     }
     return -1;
@@ -248,11 +250,13 @@ export default (server) => {
           sendPlayerList(webSocketServer, ws);
           break;
         case WebSocketAction.CHARACTER_ACTION:
+          console.log('got character action?');
           if (ws?.actionTaken === ws.gameId) {
             break;
           }
           const redisData = JSON.parse(await Redis.get(`characters-${ws.gameId}`));
           const { middleCards } = redisData;
+          const originalStartingCharacterName = ws.startingCharacter?.name;
           const actionResult = handleCharacterActions(
             getClientsInRoom(webSocketServer, ws.roomId),
             ws,
@@ -271,7 +275,17 @@ export default (server) => {
             }));
           }
 
-          ws.actionTaken = ws.gameId;
+          if (originalStartingCharacterName !== 'Doppelganger') {
+            ws.actionTaken = ws.gameId;
+          } else {
+            // this should only happen the first time the doppelganger takes an action
+            ws.send(JSON.stringify({
+              action: WebSocketAction.UPDATE_CLIENT_STARTING_CHARACTER,
+              gameOptions: {
+                startingCharacter: ws.startingCharacter,
+              }
+            }));
+          }
           ws.send(JSON.stringify({
             action: WebSocketAction.ACTION_RESULT,
             ...actionResult,

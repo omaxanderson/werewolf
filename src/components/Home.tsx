@@ -7,21 +7,12 @@ import { connect, Provider } from 'react-redux';
 import { applyMiddleware, createStore } from 'redux';
 import { composeWithDevTools } from 'redux-devtools-extension';
 import { SliderPicker } from 'react-color';
-import * as ReactColor from 'react-color';
 import { WebSocketAction } from '../IWebsocket';
 import Setup from './Setup';
 import Game from './Game';
 import { ReduxAction, Store, } from './Interfaces';
 import reducer from './reducers/Home';
-import {
-  TextInput,
-  Button,
-  Row,
-  Column,
-  Modal,
-  // idk why it's yelling but it compiles fine so whatever
-  // @ts-ignore
-} from '@omaxwellanderson/react-components';
+import { Button, Column, Modal, Row, TextInput, } from '@omaxwellanderson/react-components';
 import style from './Home.scss';
 import Player from './Player';
 
@@ -131,6 +122,12 @@ export class Home extends React.Component<Store, {
           case WebSocketAction.GAME_END:
             this.props.dispatch({
               type: ReduxAction.GAME_END,
+              payload: m,
+            });
+            break;
+          case WebSocketAction.UPDATE_CLIENT_STARTING_CHARACTER:
+            this.props.dispatch({
+              type: ReduxAction.UPDATE_STARTING_CHARACTER,
               payload: m,
             });
             break;

@@ -82,6 +82,18 @@ export default (state: Store = initialState, action) => {
         extraInfo: null,
         actionResult: null,
       };
+    case ReduxAction.UPDATE_STARTING_CHARACTER:
+      // need to be careful with this...
+      if (state.gameOptions?.startingCharacter?.name !== 'Doppelganger') {
+        console.warn('Probably shouldnt be updating starting character...');
+      }
+      return {
+        ...state,
+        gameOptions: {
+          ...state.gameOptions,
+          startingCharacter: payload?.gameOptions?.startingCharacter,
+        }
+      };
     case ReduxAction.START_GAME:
       // send the websocket message
       console.log('starting game', payload);

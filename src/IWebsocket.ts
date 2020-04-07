@@ -23,4 +23,5 @@ export enum WebSocketAction {
   GAME_END,
   NEW_GAME,
   GO_TO_SETUP,
+  UPDATE_CLIENT_STARTING_CHARACTER,
 }
