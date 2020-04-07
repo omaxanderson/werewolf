@@ -133,6 +133,12 @@ export class Home extends React.Component<Store, {
               payload: m,
             });
             break;
+          case WebSocketAction.GO_TO_SETUP:
+            this.props.dispatch({
+              type: ReduxAction.GO_TO_SETUP,
+              payload: {},
+            });
+            break;
           default:
             console.log('unhandled message received: ', m);
         }
@@ -144,13 +150,13 @@ export class Home extends React.Component<Store, {
     });
   };
 
-  onNameChange = (e) => {
+  onNameChange = (e, value) => {
     this.props.dispatch({
       type: ReduxAction.SET_NAME,
-      payload: e.target.value,
+      payload: value,
     });
     if (typeof Storage !== 'undefined') {
-      localStorage.setItem('name', e.target.value);
+      localStorage.setItem('name', value);
     }
   };
 

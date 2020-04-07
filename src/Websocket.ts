@@ -64,7 +64,13 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
   const state: GameState = JSON.parse(await Redis.get(`game-${gameId}`));
   const config: GameOptions = JSON.parse(await Redis.get(`config-${gameId}`));
   const clients = getClientsInRoom(wss, roomId);
+  const fromCharacter = state.currentIdx < config.characters.length
+    && config.characters[state.currentIdx]?.name;
   state.currentIdx += 1;
+  // should handle double characters (werewolf, mason)
+  if (fromCharacter === config.characters[state.currentIdx]?.name) {
+    state.currentIdx += 1;
+  }
   await Redis.set(`game-${gameId}`, JSON.stringify(state));
 
   const isDaylight = state.currentIdx >= config.characters.length;
@@ -83,6 +89,11 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
     setTimeout(
       () => sendFinalCharacters(wss, roomId),
       config.secondsToConference * 1000,
+    );
+  } else {
+    setTimeout(
+      () => nextCharacterTurn(wss, roomId, gameId),
+      config.secondsPerCharacter * 1000,
     );
   }
 
@@ -162,6 +173,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   await setupGame(m.config, ws.roomId, webSocketServer);
   const shuffled = shuffle(m.config.originalCharacters);
 
+  /*
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
     const c = 'Seer';
@@ -172,6 +184,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   });
   // shuffled.splice(0, 0, shuffled.pop());
   // TODO END DEBUGGING
+   */
 
   const characterMap: { [key: string]: Character } = {};
   getClientsInRoom(webSocketServer, ws.roomId).forEach(client => {
@@ -199,6 +212,12 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   } catch (e) {
     console.error(`Redis Error: ${e}`);
   }
+
+  //set timeout to start the game
+  setTimeout(
+    () => nextCharacterTurn(webSocketServer, ws.roomId, m.config.gameId),
+    START_BUFFER,
+  );
 };
 
 /**
@@ -214,7 +233,7 @@ export default (server) => {
       ws.roomId = id;
     }
     if (!Array.isArray(name)) {
-      ws.name = name;
+      ws.name = decodeURI(name);
     }
     ws.on('message', async (json: string) => {
       const m: WebSocketMessage = JSON.parse(json);
@@ -254,17 +273,27 @@ export default (server) => {
             }));
           }
 
-          // fuck yeah
-          getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
-            console.log('name');
-            console.log('started', c.startingCharacter.name);
-            console.log('current', c.character.name);
-          });
           ws.actionTaken = ws.gameId;
           ws.send(JSON.stringify({
             action: WebSocketAction.ACTION_RESULT,
             ...actionResult,
           }));
+          break;
+        case WebSocketAction.NEW_GAME:
+          // clear out all game info from all room members
+          const clientsToClear = getClientsInRoom(webSocketServer, ws.roomId);
+          clientsToClear.forEach(client => {
+            client.gameId = null;
+            client.character = null;
+            client.startingCharacter = null;
+            client.actionTaken = null;
+          });
+          clientsToClear.forEach(client => {
+            client.send(JSON.stringify({
+              action: WebSocketAction.GO_TO_SETUP,
+            }));
+          });
+
           break;
         default:
           ws.send(JSON.stringify({

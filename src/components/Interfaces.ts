@@ -23,6 +23,7 @@ export enum ReduxAction {
   SET_PLAYER_ID = 'SET_PLAYER_ID',
   SAVE_ACTION_RESULT = 'SAVE_ACTION_RESULT',
   GAME_END = 'GAME_END',
+  GO_TO_SETUP = 'GO_TO_SETUP',
 }
 
 export interface ActionResponse {

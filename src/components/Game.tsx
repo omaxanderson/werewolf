@@ -53,6 +53,13 @@ class Game extends React.Component<Store, {
      */
   }
 
+  startNewGame = () => {
+    const { client } = this.props;
+    client.send(JSON.stringify({
+      action: WebSocketAction.NEW_GAME,
+    }));
+  };
+
   getGameResults = () => {
     const { gameResults, players } = this.props;
     const { middleCards, ...rest } = gameResults;
@@ -61,19 +68,28 @@ class Game extends React.Component<Store, {
       return [playerName, rest[playerId]];
     });
     return (
-      <div>
-        <div>
-        {mappedToNames.map(([name, character]) => (
-          <div key={`result_${name}`}>
-            {name}: <strong>{character.name}</strong>
-          </div>
-        ))}
-        </div>
-        <div>
-          Middle Cards
-          {middleCards.map(card => <div key={`middle${card.name}`}>{card.name}</div>)}
-        </div>
-      </div>
+      <>
+        <Row>
+          <Column sm={12} md={6}>
+            <Header h={3}>Players</Header>
+            {mappedToNames.map(([name, character]) => (
+              <div key={`result_${name}`}>
+                {name}: <strong>{character.name}</strong>
+              </div>
+            ))}
+          </Column>
+          <Column sm={12} md={6}>
+            <Header h={3}>Middle Cards</Header>
+            {middleCards.map(card => <div key={`middle${card.name}`}>{card.name}</div>)}
+          </Column>
+        </Row>
+        <Row>
+          <Column sm={12}>
+            <Button onClick={this.startNewGame}>New Game</Button>
+          </Column>
+        </Row>
+      </>
+
     )
   };
 
@@ -263,6 +279,10 @@ class Game extends React.Component<Store, {
 
     const timer = this.getTimerJsx();
 
+    const characterHeader = gameState.currentIdx >= 0 && gameState.currentIdx < gameOptions.characters.length
+      ? <span>Current Turn: {gameOptions.characters[gameState.currentIdx]?.name}</span>
+      : <span>Character Order</span>;
+
     return (
       <>
         {timer}
@@ -290,7 +310,7 @@ class Game extends React.Component<Store, {
             </div>
           </Column>
         </Row>
-        <Header h={2} spacing="sm">Character Order</Header>
+        <Header h={2} spacing="sm">{characterHeader}</Header>
         <div className={style.RibbonContainer}>
           <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
         </div>
@@ -325,7 +345,13 @@ class Game extends React.Component<Store, {
         const diff = Math.floor((conferenceEnd - Date.now()) / 1000);
         const minutes = Math.floor(diff / 60);
         const seconds = (diff % 60).toString().padStart(2, '0');
-        return <div>{minutes}:{seconds}</div>;
+        return (
+          <Row>
+            <Column sm={12}>
+              <Header h={3}>Conference Time: {minutes}:{seconds}</Header>
+            </Column>
+          </Row>
+        );
       }
     }
     return null;
@@ -360,7 +386,7 @@ class Game extends React.Component<Store, {
     let jsx = this.getGameBody();
     return (
       <>
-        <Button onClick={this.debugStepForward}>Next</Button>
+        { /* <Button onClick={this.debugStepForward}>Next</Button> */ }
         {gameResults && <div>The results are in!</div>}
         {startingCharacter && !gameResults &&
           <div className={style.Me}>

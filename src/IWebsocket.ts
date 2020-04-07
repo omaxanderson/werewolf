@@ -21,4 +21,6 @@ export enum WebSocketAction {
   SEND_PLAYER_ID,
   ACTION_RESULT,
   GAME_END,
+  NEW_GAME,
+  GO_TO_SETUP,
 }

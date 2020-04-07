@@ -73,6 +73,15 @@ export default (state: Store = initialState, action) => {
         ...state,
         gameResults: payload.results,
       };
+    case ReduxAction.GO_TO_SETUP:
+      return {
+        ...state,
+        gameResults: null,
+        gameState: null,
+        gameOptions: null,
+        extraInfo: null,
+        actionResult: null,
+      };
     case ReduxAction.START_GAME:
       // send the websocket message
       console.log('starting game', payload);
