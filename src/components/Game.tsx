@@ -134,14 +134,34 @@ class Game extends React.Component<Store, {
     let onMiddleCardClick = (idx: number) => {};
     let onPlayerClick = (player: any) => {};
     const isMyTurn = this.isMyTurn();
-    if (isMyTurn) {
+    //if (isMyTurn) {
       const {
         allWerewolves,
         allMasons,
         insomniac,
       } = extraInfo || {};
       switch (startingCharacter.name) {
+        case 'Mystic Wolf':
+          if (isMyTurn) {
+            onPlayerClick = (player) => {
+              if (player.playerId !== playerId) {
+                client.send(JSON.stringify({
+                  action: WebSocketAction.CHARACTER_ACTION,
+                  params: {
+                    playersSelected: [player],
+                  },
+                }));
+              } else {
+                alert('Don\'t choose yourself you walnut.');
+              }
+            };
+            extraJsx = <div>Click on another player to view that card.</div>;
+            break;
+          }
         case 'Werewolf':
+          if (!allWerewolves) {
+            break;
+          }
           if (allWerewolves.length === 1) {
             extraJsx = <div>You are a solo wolf! Click on a middle card to view it.</div>;
             onMiddleCardClick = (idx: number) => client.send(JSON.stringify({
@@ -156,22 +176,10 @@ class Game extends React.Component<Store, {
             extraJsx = <div>Your other wolf is {otherWolf.name}</div>
           }
           break;
-        case 'Mystic Wolf':
-          onPlayerClick = (player) => {
-            if (player.playerId !== playerId) {
-              client.send(JSON.stringify({
-                action: WebSocketAction.CHARACTER_ACTION,
-                params: {
-                  playersSelected: [player],
-                },
-              }));
-            } else {
-              alert('Don\'t choose yourself you walnut.');
-            }
-          };
-          extraJsx = <div>Click on another player to view that card.</div>;
-          break;
         case 'Minion':
+          if (!allWerewolves) {
+            break;
+          }
           const one = allWerewolves.length === 1;
           const str = `The ${one ? 'only' : ''} werewol${one ? 'f' : 'ves'} ${one ? 'is' : 'are'} ${allWerewolves.map(w => w.name).join(' and ')}.`;
           if (allWerewolves.length > 0) {
@@ -181,6 +189,9 @@ class Game extends React.Component<Store, {
           }
           break;
         case 'Mason':
+          if (!allMasons) {
+            break;
+          }
           if (allMasons.length === 1) {
             extraJsx = <div>You are a solo mason!</div>
             // solo wolf, look at a middle card
@@ -261,12 +272,15 @@ class Game extends React.Component<Store, {
           extraJsx = <div>Click on a card in the middle to take that card</div>;
           break;
         case 'Insomniac':
+          if (!insomniac) {
+            break;
+          }
           extraJsx = <div>You are {insomniac.name === 'Insomniac' ? 'still' : 'now'} the {insomniac.name}</div>;
           break;
         default:
           // do nothing
       }
-    }
+    // }
 
     let actionResultMessage = actionResult?.message || '';
 

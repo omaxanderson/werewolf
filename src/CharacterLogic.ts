@@ -1,4 +1,4 @@
-import { Character } from './components/Characters';
+import { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
 import { ActionResponse, CharacterActionParams, ICharacter, ICharacterExtraData } from './components/Interfaces';
 
@@ -9,10 +9,11 @@ export const getCharacterTurnInfo = (
   switch (currentCharacter.name) {
     // Werewolves need to know other werewolves
     case 'Werewolf':
+    case 'Mystic Wolf':
     case 'Minion':
       const allWerewolves: MyWebSocket[] = [];
       clients.forEach(c => {
-        if (c.startingCharacter.name === 'Werewolf') {
+        if (c.startingCharacter.team === Team.WEREWOLF) {
           allWerewolves.push(c);
         }
       });
