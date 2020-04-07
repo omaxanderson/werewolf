@@ -23,7 +23,7 @@ class Setup extends React.Component<Store & { onGameStart }, {
 
     this.state = {
       timePerCharacter: '10',
-      timeToConference: '2:00',
+      timeToConference: '2',
       characters: [],
     };
   }

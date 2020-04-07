@@ -92,7 +92,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
     );
   } else {
     const t = (config.secondsPerCharacter
-      + (currentCharacter.name === 'Doppelganger' ? 15 : 0)) * 1000;
+      + (currentCharacter.name === 'Doppelganger' ? 10 : 0)) * 1000;
     setTimeout(
       () => nextCharacterTurn(wss, roomId, gameId),
       t,
@@ -109,10 +109,13 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
       action: WebSocketAction.NEXT_CHARACTER,
       gameState: state,
     };
-    if (currentCharacter.name === client.startingCharacter.name) {
-      // get special config
-      message.extraInfo = getCharacterTurnInfo(currentCharacter, clients);
-    } else if (isDaylight) {
+    //if (currentCharacter.name === client.startingCharacter.name) {
+    // get special config
+    message.extraInfo = getCharacterTurnInfo(currentCharacter, clients, client);
+    console.log('e', message.extraInfo);
+    console.log(client.startingCharacter.name);
+    console.log('.');
+    if (isDaylight) {
       // get conference end time
       const millisecondsToConference = config.secondsToConference * 1000;
       const endTime = Date.now() + millisecondsToConference;
@@ -178,7 +181,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
     const c = 'Doppelganger';
-    if (a.name === c) { // } || a.name === 'Mystic Wolf' || a.name === 'Minion') {
+    if (a.name === c || a.name === 'Mystic Wolf' || a.name === 'Seer') {
       return 1;
     }
     return -1;
@@ -250,10 +253,11 @@ export default (server) => {
           sendPlayerList(webSocketServer, ws);
           break;
         case WebSocketAction.CHARACTER_ACTION:
-          console.log('got character action?');
           if (ws?.actionTaken === ws.gameId) {
+            console.log('break early');
             break;
           }
+          console.log('got character action?');
           const redisData = JSON.parse(await Redis.get(`characters-${ws.gameId}`));
           const { middleCards } = redisData;
           const originalStartingCharacterName = ws.startingCharacter?.name;

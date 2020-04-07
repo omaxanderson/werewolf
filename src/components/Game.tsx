@@ -177,6 +177,7 @@ class Game extends React.Component<Store, {
             extraJsx = <div>Click on another player to view that card.</div>;
             break;
           }
+          // intentional fallthrough here
         case 'Werewolf':
         case 'Doppelganger Werewolf':
           if (!allWerewolves) {
@@ -192,8 +193,15 @@ class Game extends React.Component<Store, {
             }));
             // solo wolf, look at a middle card
           } else {
-            const otherWolf = allWerewolves.find(client => client.playerId !== playerId);
-            extraJsx = <div>Your other wolf is {otherWolf.name}</div>
+            console.log('im the doppelganger mw');
+            const otherWolves = allWerewolves.filter(client => client.playerId !== playerId);
+            const plural = otherWolves.length > 1;
+            const wolfStr = `Your other wol${
+              plural
+                ? 'ves are'
+                : 'f is'
+              } ${otherWolves.map(client => client.name).join(' and ')}.`;
+            extraJsx = <div>{wolfStr}</div>
           }
           break;
         case 'Doppelganger Minion':
@@ -405,7 +413,10 @@ class Game extends React.Component<Store, {
     } = this.props;
     const current = gameOptions?.characters[gameState.currentIdx];
     const me = gameOptions?.startingCharacter;
-    return Boolean(current && (current.name === me?.name));
+    if (current && (current.name === me?.name)) {
+      return true;
+    }
+    return Boolean(current && (me?.name?.startsWith(current.name)));
   };
 
   onPlayerClick = (player: IPlayer) => {

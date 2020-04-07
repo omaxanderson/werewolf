@@ -291,7 +291,8 @@ describe('Character Actions', () => {
       middleCards,
     );
 
-    expect(result.message).toEqual('You are now the Doppelganger Werewolf.');
+    expect(result.message.trim()).toEqual('You are now the Doppelganger Werewolf.');
     expect(player.startingCharacter.name).toBe('Doppelganger Werewolf');
+    expect(player.character.name).toBe('Doppelganger');
   });
 });

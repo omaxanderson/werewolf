@@ -1,3 +1,4 @@
+import cloneDeep from 'lodash/cloneDeep';
 import { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
 import { ActionResponse, CharacterActionParams, ICharacter, ICharacterExtraData } from './components/Interfaces';
@@ -5,24 +6,34 @@ import { ActionResponse, CharacterActionParams, ICharacter, ICharacterExtraData 
 export const getCharacterTurnInfo = (
   currentCharacter: ICharacter,
   clients: MyWebSocket[],
+  client: MyWebSocket,
 ): ICharacterExtraData => {
+  const { startingCharacter } = client;
   switch (currentCharacter.name) {
     // Werewolves need to know other werewolves
-    case 'Doppelganger Werewolf':
-    case 'Doppelganger Mystic Wolf':
-    case 'Doppelganger Minion':
     case 'Werewolf':
-    case 'Mystic Wolf':
+      // if current char is werewolf and you are not a werewolf
+      if (startingCharacter.team !== Team.WEREWOLF) {
+        break;
+      }
     case 'Minion':
-      const allWerewolves: MyWebSocket[] = [];
-      clients.forEach(c => {
-        if (c.startingCharacter.team === Team.WEREWOLF) {
-          allWerewolves.push(c);
-        }
-      });
-      return { allWerewolves };
+      const { name } = startingCharacter;
+      if (name.includes('Werewolf') || name.includes('Minion') || name.includes('Wolf')) {
+        // right now, if the current character is any of these it'll send everyone that info
+        const allWerewolves: MyWebSocket[] = [];
+        clients.forEach(c => {
+          if (c.startingCharacter.team === Team.WEREWOLF) {
+            allWerewolves.push(c);
+          }
+        });
+        return { allWerewolves };
+      }
+      break;
     case 'Doppelganger Mason':
     case 'Mason':
+      if (startingCharacter.name.includes('Mason')) {
+        break;
+      }
       const allMasons: MyWebSocket[] = [];
       clients.forEach(c => {
         if (['Mason', 'Doppelganger Mason'].includes(c.startingCharacter.name)) {
@@ -31,6 +42,9 @@ export const getCharacterTurnInfo = (
       });
       return { allMasons };
     case 'Doppelganger Insomniac':
+      if (startingCharacter.name !== 'Doppelganger Insomniac') {
+        break;
+      }
       let doppelgangerInsomniac: Character;
       clients.forEach(c => {
         if (c.startingCharacter.name === 'Insomniac') {
@@ -39,6 +53,9 @@ export const getCharacterTurnInfo = (
       });
       return { insomniac: doppelgangerInsomniac };
     case 'Insomniac':
+      if (startingCharacter.name !== 'Insomniac') {
+        break;
+      }
       let insomniac: Character;
       clients.forEach(c => {
         if (c.startingCharacter.name === 'Insomniac') {
@@ -47,8 +64,9 @@ export const getCharacterTurnInfo = (
       });
       return { insomniac };
     default:
-      return {};
+      // do nothing
   }
+  return {};
 };
 
 const findSelectedPlayerCharacter = (clients: MyWebSocket[], player: MyWebSocket): Character => {
@@ -93,7 +111,7 @@ export const handleCharacterActions = (
     case 'Doppelganger':
       // need to somehow turn the doppelganger into the new role
       if (playersSelected.length) {
-        const newDoppelganger = findSelectedPlayerCharacter(clients, first);
+        const newDoppelganger = cloneDeep(findSelectedPlayerCharacter(clients, first));
         const originalName = newDoppelganger.name;
         newDoppelganger.name = `Doppelganger ${newDoppelganger.name}`;
         response.result = [newDoppelganger];
