@@ -88,7 +88,8 @@ export class Home extends React.Component<Store, {
       name,
       roomId,
     } = this.props;
-    const client = new WebSocketClient(`ws://localhost:3000?id=${roomId}&name=${name}`, 'echo-protocol');
+    const { host } = window.location;
+    const client = new WebSocketClient(`ws://${host}?id=${roomId}&name=${name}`, 'echo-protocol');
     client.onerror = (e) => console.error(e);
     client.onopen = () => console.log('connected to websocket');
     client.onclose = () => console.log('closed');
