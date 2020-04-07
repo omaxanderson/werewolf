@@ -67,6 +67,7 @@ export default (state: Store = initialState, action) => {
       return {
         ...state,
         actionResult: payload,
+        extraInfo: payload.info || state.extraInfo,
       };
     case ReduxAction.GAME_END:
       return {
