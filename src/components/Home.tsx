@@ -200,12 +200,12 @@ export class Home extends React.Component<Store, {
     return (
       <>
         <div>
-          <button
+          <Button
             onClick={roomId ? this.joinGame : this.createNewGame}
             disabled={!name}
           >
             {roomId ? 'Join' : 'Create'} Game
-          </button>
+          </Button>
         </div>
       </>
     )
@@ -272,7 +272,7 @@ export class Home extends React.Component<Store, {
           </div>
         </Modal>
         {!client &&
-          <div>
+          <div style={{ marginBottom: '15px' }}>
             <TextInput label="Name" onChange={this.onNameChange} />
           </div>
         }
