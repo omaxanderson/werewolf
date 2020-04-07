@@ -3,7 +3,7 @@ import { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
 import {
   ActionResponse,
-  CharacterActionParams,
+  CharacterActionParams, GameOptions, GameState,
   ICharacter,
   ICharacterExtraData,
   IPlayer
@@ -62,7 +62,7 @@ export const getCharacterTurnInfo = (
       }
       let doppelgangerInsomniac: Character;
       clients.forEach(c => {
-        if (c.startingCharacter.name === 'Insomniac') {
+        if (c.startingCharacter.name === 'Doppelganger Insomniac') {
           doppelgangerInsomniac = c.character;
         }
       });
@@ -217,3 +217,68 @@ export const handleCharacterActions = (
   }
 };
 
+// ws.actionTaken = 'gameID-Mystic Wolf';
+// <gameId>-<turn>-<startingCharacter>
+// mystic wolf would be able to do '123-Mystic Wolf' and possibly '123-Werewolf'
+
+export function canTakeAction(
+  gameOptions: Pick<GameOptions, 'characters'>,
+  gameState: GameState,
+  clients: Pick<MyWebSocket, 'startingCharacter'>[],
+  player: Pick<MyWebSocket, 'actionTaken' | 'startingCharacter'>,
+  gameId: string,
+): boolean {
+  const { characters } = gameOptions;
+  const { currentIdx } = gameState;
+  const currentTurn = characters[currentIdx];
+
+  // cant take a turn when the game hasn't started
+  // or when the game is over
+  if (currentIdx < 0 || currentIdx >= characters.length) {
+    return false;
+  }
+
+  // check if they've taken an action for this turn
+  if (
+    player
+      .actionTaken
+      .includes(`${gameId}-${currentTurn.name}-${player.startingCharacter.name}`)
+  ) {
+    return false;
+  }
+
+  // you can usually take an action when it's your turn
+  if (player.startingCharacter.name === currentTurn.name) {
+    // Werewolf can only take an action if he is a solo wolf
+    if (player.startingCharacter.name === 'Werewolf'
+      && clients.filter(c => c.startingCharacter.team === Team.WEREWOLF).length > 1
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Mystic wolf can act as a Werewolf if she is the solo wolf
+  if (
+    player.startingCharacter.name === 'Mystic Wolf' // you are the MW
+    && currentTurn.name === 'Werewolf' // Werewolf's turn
+    && clients.filter(c => c.startingCharacter.team === Team.WEREWOLF).length === 1 // you are the only wolf
+  ) {
+    return true;
+  }
+
+  // Doppelganger can take an action after she transforms
+  if (
+    currentTurn.name === 'Doppelganger'
+    && player.startingCharacter.name.startsWith('Doppelganger')
+  ) {
+    return true;
+  }
+
+  // Doppelganger can act on werewolf turn
+  // actually that isn't possible, the fact that she is a werewolf means
+  // there is at least one other WW and therefore she won't be a solo wolf
+
+  return false;
+}

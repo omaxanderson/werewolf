@@ -10,7 +10,7 @@ import { Character, Team } from './components/Characters';
 import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
-import { getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
+import { canTakeAction, getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
 
 export interface MyWebSocket extends WebSocket {
   roomId: string;
@@ -20,7 +20,7 @@ export interface MyWebSocket extends WebSocket {
   color: string;
   character: Character;
   startingCharacter: Character;
-  actionTaken: string;
+  actionTaken: string[];
 }
 
 const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
@@ -112,9 +112,6 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
     //if (currentCharacter.name === client.startingCharacter.name) {
     // get special config
     message.extraInfo = getCharacterTurnInfo(currentCharacter, clients, client);
-    console.log('e', message.extraInfo);
-    console.log(client.startingCharacter.name);
-    console.log('.');
     if (isDaylight) {
       // get conference end time
       const millisecondsToConference = config.secondsToConference * 1000;
@@ -181,7 +178,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
     const c = 'Doppelganger';
-    if (a.name === c || a.name === 'Mystic Wolf' || a.name === 'Seer') {
+    if (a.name === c || a.name === 'Insomniac' || a.name === 'Robber') {
       return 1;
     }
     return -1;
@@ -253,20 +250,34 @@ export default (server) => {
           sendPlayerList(webSocketServer, ws);
           break;
         case WebSocketAction.CHARACTER_ACTION:
-          if (ws?.actionTaken === ws.gameId) {
-            console.log('break early');
+          const allClients = getClientsInRoom(webSocketServer, ws.roomId);
+          const gameOptions = JSON.parse(await Redis.get(`config-${ws.gameId}`));
+          const gameState = JSON.parse(await Redis.get(`game-${ws.gameId}`));
+          if (!canTakeAction(
+            gameOptions,
+            gameState,
+            allClients,
+            ws,
+            ws.gameId,
+          )) {
+            console.log('no action for you');
             break;
+          } else {
+            // set current turn
+            const current = gameOptions.characters[gameState.currentIdx]?.name;
+            const actionStr = `${ws.gameId}-${current}-${ws.startingCharacter.name}`;
+            ws.actionTaken.push(actionStr);
           }
-          console.log('got character action?');
           const redisData = JSON.parse(await Redis.get(`characters-${ws.gameId}`));
           const { middleCards } = redisData;
           const originalStartingCharacterName = ws.startingCharacter?.name;
           const actionResult = handleCharacterActions(
-            getClientsInRoom(webSocketServer, ws.roomId),
+            allClients,
             ws,
             (m as unknown as { params: CharacterActionParams }).params,
             middleCards,
           );
+          console.log(ws.actionTaken);
           // this should really be handled by the handleCharacterActions but
           // eh i'm lazy
           if (ws.startingCharacter.name === 'Drunk') {
@@ -279,9 +290,7 @@ export default (server) => {
             }));
           }
 
-          if (originalStartingCharacterName !== 'Doppelganger') {
-            ws.actionTaken = ws.gameId;
-          } else {
+          if (originalStartingCharacterName === 'Doppelganger') {
             // this should only happen the first time the doppelganger takes an action
             ws.send(JSON.stringify({
               action: WebSocketAction.UPDATE_CLIENT_STARTING_CHARACTER,
@@ -302,7 +311,7 @@ export default (server) => {
             client.gameId = null;
             client.character = null;
             client.startingCharacter = null;
-            client.actionTaken = null;
+            client.actionTaken = [];
           });
           clientsToClear.forEach(client => {
             client.send(JSON.stringify({
@@ -336,6 +345,8 @@ export default (server) => {
 
     // set unique id for client
     ws.playerId = v4();
+
+    ws.actionTaken = [];
 
     // set color
     ws.color = `#${[

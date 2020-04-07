@@ -1,8 +1,8 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
+import { canTakeAction, getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
 import characters, { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
-import { clientsFixture, getCharacter, middleCardsFixture, midGameClients } from './Fixtures.spec';
+import { clientsFixture, getCharacter, middleCardsFixture } from './Fixtures.spec';
 import { isCharacter, IWebSocket } from './components/Interfaces';
 import { v4 } from 'uuid';
 
@@ -15,6 +15,11 @@ const characterTemplate: Character = {
   team: -1,
   doppel: true,
 };
+
+function createCharacter(opts): Character {
+  const { name, team = Team.VILLAGER, order = 0, doppel = true, key = name, } = opts;
+  return { name, team, order, doppel, key }
+}
 
 function createClient(name: string, startingCharacterName: string, characterName: string = '') {
   return {
@@ -488,4 +493,303 @@ describe('Character Actions', () => {
       'Mason',
     ]);
   });
+});
+
+describe('Can Take Action', () => {
+  let gameOptions;
+  let gameState;
+  let myClients;
+  const gameId = 'corndog';
+  beforeEach(() => {
+    gameOptions = {
+      characters: [
+        { name: 'Doppelganger' },
+        { name: 'Mystic Wolf' },
+        { name: 'Werewolf' },
+        { name: 'Minion' },
+        { name: 'Seer' },
+        { name: 'Robber' },
+        { name: 'Troublemaker' },
+        { name: 'Drunk' },
+        { name: 'Insomniac' },
+      ]
+    };
+    gameState = { currentIdx: 0 };
+    myClients = [
+      { startingCharacter: { name: 'Doppelganger', team: Team.UNKNOWN }},
+      { startingCharacter: { name: 'Mystic Wolf', team: Team.WEREWOLF }},
+      { startingCharacter: { name: 'Werewolf', team: Team.WEREWOLF }},
+      { startingCharacter: { name: 'Minion', team: Team.WEREWOLF_ALLY }},
+      { startingCharacter: { name: 'Seer', team: Team.VILLAGER }},
+      { startingCharacter: { name: 'Robber', team: Team.VILLAGER }},
+      { startingCharacter: { name: 'Troublemaker', team: Team.VILLAGER }},
+      { startingCharacter: { name: 'Drunk', team: Team.VILLAGER }},
+      { startingCharacter: { name: 'Insomniac', team: Team.VILLAGER }},
+    ];
+  });
+
+  it('Should allow the Doppelganger to take an action after she transforms', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Doppelganger Insomniac' }),
+      actionTaken: [`${gameId}-Doppelganger`],
+    };
+    myClients.push(player);
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Doppelganger');
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+  });
+
+  it('Should allow the Doppelganger to take two and only two actions after she transforms', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Doppelganger Minion' }),
+      actionTaken: [`${gameId}-Doppelganger-Doppelganger`],
+    };
+    myClients.push(player);
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Doppelganger');
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+    player.actionTaken.push(`${gameId}-Doppelganger-Doppelganger Minion`);
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should allow the Doppelganger to take two actions if he sees Mystic Wolf', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Doppelganger Mystic Wolf' }),
+      actionTaken: [`${gameId}-Doppelganger-Doppelganger`],
+    };
+    myClients.push(player);
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Doppelganger');
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+    player.actionTaken.push(`${gameId}-Doppelganger-${player.startingCharacter.name}`);
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should allow the Doppelganger to take two actions if he sees Drunk', () => {
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Doppelganger');
+    const player = {
+      startingCharacter: createCharacter({ name: 'Doppelganger Drunk' }),
+      actionTaken: [`${gameId}-Doppelganger-Doppelganger`],
+    };
+    myClients.push(player);
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+    player.actionTaken.push(`${gameId}-Doppelganger-${player.startingCharacter.name}`);
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should allow the Mystic wolf to take one action on her turn', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Mystic Wolf' }),
+      actionTaken: [],
+    };
+    myClients.push(player);
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Mystic Wolf');
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+    player.actionTaken.push(`${gameId}-Mystic Wolf-${player.startingCharacter.name}`);
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should not allow the Mystic wolf to take an action if she is not the solo wolf on the Werewolf turn', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Mystic Wolf' }),
+      actionTaken: [],
+    };
+    myClients.push(player);
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Werewolf');
+
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should allow the Mystic wolf to take an action if she is the solo wolf on the Werewolf turn', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Mystic Wolf' }),
+      actionTaken: [`${gameId}-Mystic Wolf-Mystic Wolf`],
+    };
+    myClients.push(player);
+
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Werewolf');
+    // Remove other werewolves
+    myClients = myClients.filter(c => c.startingCharacter.name !== 'Werewolf');
+
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+    player.actionTaken.push(`${gameId}-Werewolf-Mystic Wolf`);
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should allow the Werewolf to take an action on his turn when he is solo', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Werewolf' }),
+      actionTaken: [],
+    };
+    // Remove other werewolves
+    myClients = myClients.filter(c => c.startingCharacter.name !== 'Werewolf');
+
+    // add myself
+    myClients.push(player);
+
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Werewolf');
+
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+    player.actionTaken.push(`${gameId}-Werewolf-Werewolf`);
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should not allow the Werewolf to take an action on his turn when there are multiple wolves', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Werewolf' }),
+      actionTaken: [],
+    };
+    // add myself
+    myClients.push(player);
+
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Werewolf');
+
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
+  it('Should allow the Minion to take an action even though there is nothing to do', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Minion' }),
+      actionTaken: [],
+    };
+    // add myself
+    myClients.push(player);
+
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Minion');
+
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+  });
+
+  it('Should allow the Seer to take an action on her turn', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Seer' }),
+      actionTaken: [],
+    };
+    // add myself
+    myClients.push(player);
+
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Seer');
+
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(true);
+    player.actionTaken.push(`${gameId}-Seer-Seer`);
+  });
+
+  it('Should not allow the Seer to take an action on Robbers turn', () => {
+    const player = {
+      startingCharacter: createCharacter({ name: 'Seer' }),
+      actionTaken: [],
+    };
+    // add myself
+    myClients.push(player);
+
+    gameState.currentIdx = gameOptions.characters.findIndex(c => c.name === 'Robber');
+
+    expect(canTakeAction(
+      gameOptions,
+      gameState,
+      myClients,
+      player,
+      gameId,
+    )).toBe(false);
+  });
+
 });

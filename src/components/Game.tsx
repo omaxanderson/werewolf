@@ -134,66 +134,88 @@ class Game extends React.Component<Store, {
     let onMiddleCardClick = (idx: number) => {};
     let onPlayerClick = (player: any) => {};
     const isMyTurn = this.isMyTurn();
-    //if (isMyTurn) {
-      const {
-        allWerewolves,
-        allMasons,
+    const singlePlayerClick = (player) => {
+      if (player.playerId !== playerId) {
+        client.send(JSON.stringify({
+          action: WebSocketAction.CHARACTER_ACTION,
+          params: {
+            playersSelected: [player],
+          },
+        }));
+      }
+    };
+    const multiPlayerClick = (player) => {
+      if (!isMyTurn) {
+        return;
+      }
+      const { playersSelected: currentlySelected } = this.state;
+      const playersSelected = [...currentlySelected, player];
+      if (player.playerId !== playerId) {
+        this.setState({ playersSelected }, () => {
+          if (playersSelected.length === 2) {
+            client.send(JSON.stringify({
+              action: WebSocketAction.CHARACTER_ACTION,
+              params: { playersSelected },
+            }));
+          }
+        });
+      }
+    };
+    const singleMiddleClick = (idx: number) => {
+      client.send(JSON.stringify({
+        action: WebSocketAction.CHARACTER_ACTION,
+        params: {
+          middleCardsSelected: [idx],
+        },
+      }));
+    };
+    const multiMiddleClick = (idx: number) => {
+      if (!isMyTurn) {
+        return;
+      }
+      const { middleCardsSelected: currentlySelected } = this.state;
+      const middleCardsSelected = [...currentlySelected, idx];
+      this.setState({ middleCardsSelected }, () => {
+        if (middleCardsSelected.length === 2) {
+          client.send(JSON.stringify({
+            action: WebSocketAction.CHARACTER_ACTION,
+            params: { middleCardsSelected },
+          }));
+        }
+      });
+    };
+
+    const {
+      allWerewolves,
+      allMasons,
         insomniac,
       } = extraInfo || {};
       switch (startingCharacter.name) {
         case 'Doppelganger':
+          onPlayerClick = singlePlayerClick;
           if (isMyTurn) {
-            onPlayerClick = (player) => {
-              if (player.playerId !== playerId) {
-                client.send(JSON.stringify({
-                  action: WebSocketAction.CHARACTER_ACTION,
-                  params: {
-                    playersSelected: [player],
-                  },
-                }));
-              } else {
-                alert('Don\'t choose yourself you walnut.');
-              }
-            };
             extraJsx = <div>Select another player to become that role.</div>;
           }
           break;
         case 'Doppelganger Mystic Wolf':
         case 'Mystic Wolf':
+          console.log('doppel here?');
+          onPlayerClick = singlePlayerClick;
           if (isMyTurn) {
-            console.log('doppel here?');
-            onPlayerClick = (player) => {
-              if (player.playerId !== playerId) {
-                client.send(JSON.stringify({
-                  action: WebSocketAction.CHARACTER_ACTION,
-                  params: {
-                    playersSelected: [player],
-                  },
-                }));
-              } else {
-                alert('Don\'t choose yourself you walnut.');
-              }
-            };
             extraJsx = <div>Click on another player to view that card.</div>;
             break;
           }
           // intentional fallthrough here
         case 'Werewolf':
         case 'Doppelganger Werewolf':
+          onMiddleCardClick = singleMiddleClick;
           if (!allWerewolves) {
             break;
           }
           if (allWerewolves.length === 1) {
             extraJsx = <div>You are a solo wolf! Click on a middle card to view it.</div>;
-            onMiddleCardClick = (idx: number) => client.send(JSON.stringify({
-              action: WebSocketAction.CHARACTER_ACTION,
-              params: {
-                middleCardsSelected: [idx],
-              },
-            }));
             // solo wolf, look at a middle card
           } else {
-            console.log('im the doppelganger mw');
             const otherWolves = allWerewolves.filter(client => client.playerId !== playerId);
             const plural = otherWolves.length > 1;
             const wolfStr = `Your other wol${
@@ -232,78 +254,32 @@ class Game extends React.Component<Store, {
           break;
         case 'Robber':
         case 'Doppelganger Robber':
-          onPlayerClick = (player) => {
-            if (player.playerId !== playerId) {
-              client.send(JSON.stringify({
-                action: WebSocketAction.CHARACTER_ACTION,
-                params: {
-                  playersSelected: [player],
-                },
-              }));
-            } else {
-              alert('Don\'t choose yourself you walnut.');
-            }
-          };
-          extraJsx = <div>Click on a player to rob their card.</div>;
+          onPlayerClick = singlePlayerClick;
+          if (isMyTurn) {
+            extraJsx = <div>Click on a player to rob their card.</div>;
+          }
           break;
         case 'Seer':
         case 'Doppelganger Seer':
-          onPlayerClick = (player) => {
-            if (player.playerId !== playerId) {
-              client.send(JSON.stringify({
-                action: WebSocketAction.CHARACTER_ACTION,
-                params: {
-                  playersSelected: [player],
-                },
-              }));
-            } else {
-              alert('Don\'t choose yourself you walnut.');
-            }
-          };
-          onMiddleCardClick = (idx: number) => {
-            const { middleCardsSelected: currentlySelected } = this.state;
-            const middleCardsSelected = [...currentlySelected, idx];
-            this.setState({ middleCardsSelected }, () => {
-              if (middleCardsSelected.length === 2) {
-                client.send(JSON.stringify({
-                  action: WebSocketAction.CHARACTER_ACTION,
-                  params: { middleCardsSelected },
-                }));
-              }
-            });
-          };
-          extraJsx = <div>Click on a player to see, or select two cards from the middle.</div>;
+          onPlayerClick = singlePlayerClick;
+          onMiddleCardClick = multiMiddleClick;
+          if (isMyTurn) {
+            extraJsx = <div>Click on a player to see, or select two cards from the middle.</div>;
+          }
         break;
         case 'Troublemaker':
         case 'Doppelganger Troublemaker':
-          onPlayerClick = (player) => {
-            const { playersSelected: currentlySelected } = this.state;
-            const playersSelected = [...currentlySelected, player];
-            if (player.playerId === playerId) {
-              alert('Don\'t choose yourself you walnut.');
-            } else {
-              this.setState({ playersSelected }, () => {
-                if (playersSelected.length === 2) {
-                  client.send(JSON.stringify({
-                    action: WebSocketAction.CHARACTER_ACTION,
-                    params: { playersSelected },
-                  }));
-                  // setTimeout(() => this.setState({ playersSelected: [] }), 5000);
-                }
-              });
-            }
-          };
-          extraJsx = <div>Click on two players to swap them.</div>;
+          onPlayerClick = multiPlayerClick;
+          if (isMyTurn) {
+            extraJsx = <div>Click on two players to swap them.</div>;
+          }
           break;
         case 'Drunk':
         case 'Doppelganger Drunk':
-          onMiddleCardClick = (idx: number) => client.send(JSON.stringify({
-            action: WebSocketAction.CHARACTER_ACTION,
-            params: {
-              middleCardsSelected: [idx],
-            },
-          }));
-          extraJsx = <div>Click on a card in the middle to take that card</div>;
+          onMiddleCardClick = singleMiddleClick;
+          if (isMyTurn) {
+            extraJsx = <div>Click on a card in the middle to take that card</div>;
+          }
           break;
         case 'Insomniac':
         case 'Doppelganger Insomniac':
