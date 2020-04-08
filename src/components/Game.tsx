@@ -12,8 +12,10 @@ import {
   Row,
   Column,
   Header,
+  Modal,
 } from '@omaxwellanderson/react-components';
 import Players from './Players';
+import Voting from './Voting';
 
 class Game extends React.Component<Store, {
   middleCardsSelected: number[];
@@ -62,11 +64,17 @@ class Game extends React.Component<Store, {
 
   getGameResults = () => {
     const { gameResults, players } = this.props;
-    const { middleCards, ...rest } = gameResults;
+    const { middleCards, votes, ...rest } = gameResults;
     const mappedToNames = Object.keys(rest).map(playerId => {
       const { name: playerName } = players.find(p => p.playerId === playerId);
       return [playerName, rest[playerId]];
     });
+
+    const mappedVotesToNames = Object.keys(votes).map(playerId => {
+      const { name: playerName } = players.find(p => p.playerId === playerId);
+      return [playerName, votes[playerId]];
+    });
+    console.log('mapped votes', mappedVotesToNames);
     return (
       <>
         <Row>
@@ -317,7 +325,7 @@ class Game extends React.Component<Store, {
 
     return (
       <>
-        {timer}
+        <Voting />
         <Row>
           <Column sm={6}>
             <div className={classNames(style.Box, {
@@ -365,28 +373,7 @@ class Game extends React.Component<Store, {
   };
 
   getTimerJsx = () => {
-    const {
-      gameState,
-      gameOptions,
-      extraInfo,
-    } = this.props;
-    const isDaylight = gameState.currentIdx === gameOptions.characters.length;
-    if (isDaylight) {
-      const conferenceEnd = extraInfo?.conferenceEndTime;
-      if (conferenceEnd) {
-        const diff = Math.floor((conferenceEnd - Date.now()) / 1000);
-        const minutes = Math.floor(diff / 60);
-        const seconds = (diff % 60).toString().padStart(2, '0');
-        return (
-          <Row>
-            <Column sm={12}>
-              <Header h={3}>Conference Time: {minutes}:{seconds}</Header>
-            </Column>
-          </Row>
-        );
-      }
-    }
-    return null;
+    return <Voting />;
   };
 
   isMyTurn = (): boolean => {

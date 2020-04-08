@@ -21,6 +21,7 @@ export interface MyWebSocket extends WebSocket {
   character: Character;
   startingCharacter: Character;
   actionTaken: string[];
+  vote: string, // going to be the playerId
 }
 
 const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
@@ -38,15 +39,20 @@ const START_BUFFER = 5 * 1000;
 const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
   const results: {
     [playerId: string]: Character;
-  } & {
-    middleCards: Character[];
-  } = {
-    middleCards: null,
-  };
+  } = {};
+  const votes = {};
   const clients = getClientsInRoom(wss, roomId);
   let gameId;
   clients.forEach(client => {
     results[client.playerId] = client.character;
+
+    // set votes
+    if (votes[client.vote]) {
+      votes[client.vote] = votes[client.vote] + 1;
+    } else {
+      votes[client.vote] = 1;
+    }
+    // get game id
     if (!gameId && client.gameId) {
       gameId = client.gameId;
     }
@@ -56,7 +62,11 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
 
   clients.forEach(client => client.send(JSON.stringify({
     action: WebSocketAction.GAME_END,
-    results,
+    results: {
+      ...results,
+      middleCards,
+      votes,
+    },
   })));
 };
 
@@ -86,10 +96,12 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
     };
 
   if (isDaylight) {
+    /*
     setTimeout(
       () => sendFinalCharacters(wss, roomId),
       config.secondsToConference * 1000,
     );
+     */
   } else {
     const t = (config.secondsPerCharacter
       + (currentCharacter.name === 'Doppelganger' ? 10 : 0)) * 1000;
@@ -248,6 +260,17 @@ export default (server) => {
         case WebSocketAction.SET_COLOR:
           ws.color = m.message;
           sendPlayerList(webSocketServer, ws);
+          break;
+        case WebSocketAction.CAST_VOTE:
+          const { vote: { playerId } } = m;
+          // save it in an object on the client?
+          ws.vote = playerId;
+          const clientsForVote = getClientsInRoom(webSocketServer, ws.roomId);
+          // then check all clients and if they all have a vote for this game id
+          if (clientsForVote.every(c => c.vote)) {
+            // send results to everyone
+            await sendFinalCharacters(webSocketServer, ws.roomId);
+          }
           break;
         case WebSocketAction.CHARACTER_ACTION:
           const allClients = getClientsInRoom(webSocketServer, ws.roomId);

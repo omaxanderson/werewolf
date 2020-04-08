@@ -1,4 +1,4 @@
-import { GameOptions } from './components/Interfaces';
+import { GameOptions, IPlayer } from './components/Interfaces';
 
 export interface WebSocketMessage {
   action: WebSocketAction;
@@ -6,6 +6,7 @@ export interface WebSocketMessage {
   message?: string;
   broadcast?: boolean;
   config?: GameOptions;
+  vote?: IPlayer;
 }
 
 export enum WebSocketAction {
@@ -24,4 +25,5 @@ export enum WebSocketAction {
   NEW_GAME,
   GO_TO_SETUP,
   UPDATE_CLIENT_STARTING_CHARACTER,
+  CAST_VOTE,
 }
