@@ -189,8 +189,8 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
 
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
-    const c = 'Apprentice Seer';
-    if (a.name === c /*|| a.name === 'Minion'*/ ) {
+    const c = 'Doppelganger';
+    if (a.name === c || a.name === 'Mason' ) {
       return 1;
     }
     return -1;
@@ -335,6 +335,7 @@ export default (server) => {
             client.character = null;
             client.startingCharacter = null;
             client.actionTaken = [];
+            client.vote = null;
           });
           clientsToClear.forEach(client => {
             client.send(JSON.stringify({

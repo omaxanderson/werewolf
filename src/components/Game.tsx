@@ -74,11 +74,12 @@ class Game extends React.Component<Store, {
       const { name: playerName } = players.find(p => p.playerId === playerId);
       return [playerName, votes[playerId]];
     });
+    mappedVotesToNames.sort(([_, a], [__, b]) => b - a);
     console.log('mapped votes', mappedVotesToNames);
     return (
       <>
         <Row>
-          <Column sm={12} md={6}>
+          <Column sm={12} md={4}>
             <Header h={3}>Players</Header>
             {mappedToNames.map(([name, character]) => (
               <div key={`result_${name}`}>
@@ -86,9 +87,16 @@ class Game extends React.Component<Store, {
               </div>
             ))}
           </Column>
-          <Column sm={12} md={6}>
+          <Column sm={12} md={4}>
             <Header h={3}>Middle Cards</Header>
             {middleCards.map(card => <div key={`middle${card.name}`}>{card.name}</div>)}
+          </Column>
+          <Column sm={12} md={4}>
+            <Header h={3}>Votes</Header>
+            {mappedVotesToNames.map(([name, votes], idx) => {
+              const jsx = <div key={`vote_${name}`}>{name}: {votes}</div>;
+              return idx === 0 ? <strong>{jsx}</strong> : jsx;
+            })}
           </Column>
         </Row>
         <Row>
@@ -256,8 +264,13 @@ class Game extends React.Component<Store, {
             extraJsx = <div>You are a solo mason!</div>
             // solo wolf, look at a middle card
           } else {
-            const otherMason = allMasons.find(client => client.playerId !== playerId);
-            extraJsx = <div>Your other mason is {otherMason.name}</div>
+            const otherMason = allMasons.filter(client => client.playerId !== playerId);
+            const pluralMason = otherMason.length > 1;
+            const masonStr = `Your other mason${pluralMason ? 's' : ''} ${pluralMason
+              ? 'are'
+              : 'is'
+            } ${otherMason.map(({name}) => name).join(' and ')}.`;
+            extraJsx = <div>{masonStr}</div>
           }
           break;
         case 'Robber':
