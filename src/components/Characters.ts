@@ -92,6 +92,15 @@ const characters: Character[] = [
     color: '#BBFBAD',
   },
   {
+    name: 'Apprentice Seer',
+    key: 'apprentice_seer',
+    team: Team.VILLAGER,
+    order: 55,
+    doppel: true,
+    directions: `You may view one card from the center.`,
+    color: '#BBFBAD',
+  },
+  {
     name: 'Robber',
     key: 'robber',
     team: Team.VILLAGER,

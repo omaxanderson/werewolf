@@ -6,8 +6,6 @@ import { clientsFixture, getCharacter, middleCardsFixture } from './Fixtures.spe
 import { isCharacter, IWebSocket } from './components/Interfaces';
 import { v4 } from 'uuid';
 
-type TestWebSocket = IWebSocket & { name: string };
-
 const characterTemplate: Character = {
   name: '',
   key: '',

@@ -267,6 +267,13 @@ class Game extends React.Component<Store, {
             extraJsx = <div>Click on a player to see, or select two cards from the middle.</div>;
           }
         break;
+        case 'Apprentice Seer':
+        case 'Doppelganger Apprentice Seer':
+          onMiddleCardClick = singleMiddleClick;
+          if (isMyTurn) {
+            extraJsx = <div>Click on a card in the middle to view that card.</div>;
+          }
+          break;
         case 'Troublemaker':
         case 'Doppelganger Troublemaker':
           onPlayerClick = multiPlayerClick;

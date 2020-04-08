@@ -177,8 +177,8 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
 
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
-    const c = 'Doppelganger';
-    if (a.name === c || a.name === 'Minion') {
+    const c = 'Apprentice Seer';
+    if (a.name === c /*|| a.name === 'Minion'*/ ) {
       return 1;
     }
     return -1;
