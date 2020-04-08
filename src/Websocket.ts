@@ -5,7 +5,7 @@ import shuffle from 'lodash/shuffle';
 import { v4 } from 'uuid';
 import Redis from './Redis';
 import parseUrl from "./util/parseUrl";
-import { CharacterActionParams, GameOptions, GameState, ICharacterExtraData } from './components/Interfaces';
+import { CharacterActionParams, GameOptions, GameState, ICharacterExtraData, LogItem } from './components/Interfaces';
 import { Character, Team } from './components/Characters';
 import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
@@ -60,12 +60,15 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
   const { middleCards } = JSON.parse(await Redis.get(`characters-${gameId}`));
   results.middleCards = middleCards;
 
+  const log: LogItem[] = JSON.parse(await Redis.get(`log-${gameId}`));
+
   clients.forEach(client => client.send(JSON.stringify({
     action: WebSocketAction.GAME_END,
     results: {
       ...results,
       middleCards,
       votes,
+      log,
     },
   })));
 };
@@ -190,7 +193,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
     const c = 'Doppelganger';
-    if (a.name === c || a.name === 'Mason' ) {
+    if (a.name === c || a.name === 'Robber' ) {
       return 1;
     }
     return -1;
@@ -294,13 +297,14 @@ export default (server) => {
           const redisData = JSON.parse(await Redis.get(`characters-${ws.gameId}`));
           const { middleCards } = redisData;
           const originalStartingCharacterName = ws.startingCharacter?.name;
-          const actionResult = handleCharacterActions(
+          const actionResult = await handleCharacterActions(
             allClients,
             ws,
             (m as unknown as { params: CharacterActionParams }).params,
             middleCards,
+            Redis,
           );
-          console.log(ws.actionTaken);
+
           // this should really be handled by the handleCharacterActions but
           // eh i'm lazy
           if (ws.startingCharacter.name === 'Drunk') {
@@ -322,6 +326,7 @@ export default (server) => {
               }
             }));
           }
+
           ws.send(JSON.stringify({
             action: WebSocketAction.ACTION_RESULT,
             ...actionResult,

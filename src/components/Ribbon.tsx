@@ -30,6 +30,7 @@ class Ribbon extends React.Component<{
             ? style['RibbonItem--active']
             : style.RibbonItem, {
             [style.RibbonItem__highlighted]: c.highlighted,
+            [style.RibbonItem__Clickable]: typeof onClick !== 'undefined',
           });
           return (
             <div

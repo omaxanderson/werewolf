@@ -92,3 +92,10 @@ export interface CharacterActionParams {
   playersSelected?: IPlayer[];
   middleCardsSelected?: number[];
 }
+
+export interface LogItem {
+  player: string;
+  as: string;
+  playersSelected?: string[];
+  middleCardsSelected?: string[];
+}

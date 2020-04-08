@@ -19,6 +19,10 @@
     border: 3px solid #e02442;
   }
 
+  &__Clickable {
+    cursor: pointer;
+  }
+
   & + .RibbonItem {
     margin-left: 10px;
   }

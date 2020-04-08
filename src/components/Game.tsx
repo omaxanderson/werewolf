@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 import { Character, Team } from "./Characters";
-import { IPlayer } from './Interfaces';
+import { IPlayer, LogItem } from './Interfaces';
 import { Store } from './Interfaces';
 import Ribbon from './Ribbon';
 import style from './Game.scss';
@@ -16,6 +16,7 @@ import {
 } from '@omaxwellanderson/react-components';
 import Players from './Players';
 import Voting from './Voting';
+import { v4 } from 'uuid';
 
 class Game extends React.Component<Store, {
   middleCardsSelected: number[];
@@ -55,6 +56,12 @@ class Game extends React.Component<Store, {
      */
   }
 
+  componentWillUnmount(): void {
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
+  }
+
   startNewGame = () => {
     const { client } = this.props;
     client.send(JSON.stringify({
@@ -64,7 +71,7 @@ class Game extends React.Component<Store, {
 
   getGameResults = () => {
     const { gameResults, players } = this.props;
-    const { middleCards, votes, ...rest } = gameResults;
+    const { middleCards, votes, log, ...rest } = gameResults;
     const mappedToNames = Object.keys(rest).map(playerId => {
       const { name: playerName } = players.find(p => p.playerId === playerId);
       return [playerName, rest[playerId]];
@@ -75,7 +82,17 @@ class Game extends React.Component<Store, {
       return [playerName, votes[playerId]];
     });
     mappedVotesToNames.sort(([_, a], [__, b]) => b - a);
-    console.log('mapped votes', mappedVotesToNames);
+    const readableLog = log.map((logItem: LogItem) => {
+      let str = `${logItem.player} as the ${logItem.as}: `;
+      if (logItem.middleCardsSelected?.length > 0) {
+        str += `selected the ${
+          logItem.middleCardsSelected.join(' and ')
+        } from the middle.`;
+      } else if (logItem.playersSelected?.length > 0) {
+        str += `selected ${logItem.playersSelected.join(' and ')}.`;
+      }
+      return str;
+    });
     return (
       <>
         <Row>
@@ -97,6 +114,12 @@ class Game extends React.Component<Store, {
               const jsx = <div key={`vote_${name}`}>{name}: {votes}</div>;
               return idx === 0 ? <strong>{jsx}</strong> : jsx;
             })}
+          </Column>
+        </Row>
+        <Row>
+          <Column sm={12}>
+            <Header h={3}>Log</Header>
+            {readableLog.map(l => <div key={v4()}>{l}</div>)}
           </Column>
         </Row>
         <Row>
@@ -215,7 +238,6 @@ class Game extends React.Component<Store, {
           break;
         case 'Doppelganger Mystic Wolf':
         case 'Mystic Wolf':
-          console.log('doppel here?');
           onPlayerClick = singlePlayerClick;
           if (isMyTurn) {
             extraJsx = <div>Click on another player to view that card.</div>;
@@ -330,8 +352,6 @@ class Game extends React.Component<Store, {
       }, 1000);
     }
 
-    const timer = this.getTimerJsx();
-
     const characterHeader = gameState.currentIdx >= 0 && gameState.currentIdx < gameOptions.characters.length
       ? <span>Current Turn: {gameOptions.characters[gameState.currentIdx]?.name}</span>
       : <span>Character Order</span>;
@@ -400,10 +420,6 @@ class Game extends React.Component<Store, {
       return true;
     }
     return Boolean(current && (me?.name?.startsWith(current.name)));
-  };
-
-  onPlayerClick = (player: IPlayer) => {
-    console.log('clicked on', player);
   };
 
   debugStepForward = () => {

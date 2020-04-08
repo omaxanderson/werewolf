@@ -6,8 +6,9 @@ import {
   CharacterActionParams, GameOptions, GameState,
   ICharacter,
   ICharacterExtraData,
-  IPlayer
+  IPlayer, LogItem
 } from './components/Interfaces';
+import { Redis } from 'ioredis';
 
 export const getCharacterTurnInfo = (
   currentCharacter: ICharacter,
@@ -105,12 +106,13 @@ const actionMap = {
 
 // ACTION EFFECT always on player.character
 // origin of effect always from player.startingCharacter
-export const handleCharacterActions = (
+export const handleCharacterActions = async (
   clients: MyWebSocket[],
   player: MyWebSocket,
   params: CharacterActionParams,
   middleCards: Character[],
-): ActionResponse => {
+  storage: Redis,
+): Promise<ActionResponse> => {
   const { startingCharacter: character } = player;
   const {
     playersSelected,
@@ -122,6 +124,25 @@ export const handleCharacterActions = (
     message: '',
     result: [],
   };
+  try {
+    const log: LogItem[] = JSON.parse(await storage.get(`log-${player.gameId}`)) || [];
+    const logItem: LogItem = {
+      player: player.name,
+      as: player.startingCharacter.name,
+      playersSelected: [],
+      middleCardsSelected: [],
+    };
+    // conditionaly add the log items, kinda gross but whatever
+    if (first) logItem.playersSelected.push(`${first.name} (${findSelectedPlayerCharacter(clients, first).name})`);
+    if (second) logItem.playersSelected.push(`${second.name} (${findSelectedPlayerCharacter(clients, second).name})`);
+    if (firstMiddle) logItem.middleCardsSelected.push(middleCards[firstMiddle].name);
+    if (secondMiddle) logItem.middleCardsSelected.push(middleCards[secondMiddle].name);
+
+    log.push(logItem);
+    await storage.set(`log-${player.gameId}`, JSON.stringify(log));
+  } catch (e) {
+    console.log(`Error: ${e.message}`);
+  }
   switch (character.name) {
     case 'Doppelganger':
       // need to somehow turn the doppelganger into the new role
@@ -179,11 +200,13 @@ export const handleCharacterActions = (
         if (client.playerId === first.playerId) {
           // client is the chosen player's card
           newCharacter = client.character;
-          client.character = character; // set new player as robber
+          client.character = player.character; // set new player as robber
           player.character = newCharacter; // set robber as new character
         }
       });
       response.result = [newCharacter];
+      console.log('starting', player.character.name);
+      console.log('new', newCharacter.name);
       response.message = `You are now the ${newCharacter.name}.`;
       return response;
     case 'Doppelganger Troublemaker':
@@ -215,6 +238,8 @@ export const handleCharacterActions = (
     default:
       console.log('character action not supported');
   }
+
+  return response;
 };
 
 // ws.actionTaken = 'gameID-Mystic Wolf';
