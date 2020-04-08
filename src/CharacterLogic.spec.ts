@@ -3,7 +3,7 @@ import { canTakeAction, getCharacterTurnInfo, handleCharacterActions } from './C
 import characters, { Character, Team } from './components/Characters';
 import { MyWebSocket } from './Websocket';
 import { clientsFixture, getCharacter, middleCardsFixture } from './Fixtures.spec';
-import { isCharacter, IWebSocket } from './components/Interfaces';
+import { isCharacter } from './components/Interfaces';
 import { v4 } from 'uuid';
 
 const characterTemplate: Character = {

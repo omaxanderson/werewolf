@@ -208,7 +208,13 @@ export class Home extends React.Component<Store, {
     )
   };
 
-  leaveGame = () => window.location.href = '/';
+  leaveGame = () => {
+    if (typeof Storage !== 'undefined') {
+      localStorage.removeItem('name');
+      localStorage.removeItem('joined');
+    }
+    window.location.href = '/';
+  };
   onToggleChangeColor = () => this.setState({ isChangingColor: !this.state.isChangingColor });
 
   onChangeColor = () => {
