@@ -205,8 +205,6 @@ export const handleCharacterActions = async (
         }
       });
       response.result = [newCharacter];
-      console.log('starting', player.character.name);
-      console.log('new', newCharacter.name);
       response.message = `You are now the ${newCharacter.name}.`;
       return response;
     case 'Doppelganger Troublemaker':

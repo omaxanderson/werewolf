@@ -29,7 +29,7 @@ const jsConfig = {
         rules: [
             {
                 test: /\.ts(x?)$/,
-                exclude: /node_modules/,
+                exclude: [/node_modules/, /\.spec\./],
                 use: {
                     loader: "ts-loader"
                 },
