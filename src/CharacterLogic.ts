@@ -40,10 +40,10 @@ export const getCharacterTurnInfo = (
     case 'Werewolf':
     case 'Minion':
       // right now, if the current character is any of these it'll send everyone that info
-      const allWerewolves: MyWebSocket[] = [];
+      const allWerewolves: { name: string; playerId: string; }[] = [];
       clients.forEach(c => {
         if (c.startingCharacter.team === Team.WEREWOLF) {
-          allWerewolves.push(c);
+          allWerewolves.push({ name: c.name, playerId: c.playerId });
         }
       });
       return { allWerewolves };
