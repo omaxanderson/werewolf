@@ -11,7 +11,7 @@ import { WebSocketAction } from '../IWebsocket';
 
 class Voting extends React.Component<Store, {
   playerSelected: IPlayer;
-  hasCastVote: boolean;
+  hasCastVote: IPlayer;
 }> {
   private interval;
   constructor(props) {
@@ -19,7 +19,7 @@ class Voting extends React.Component<Store, {
 
     this.state = {
       playerSelected: null,
-      hasCastVote: false,
+      hasCastVote: null,
     };
   }
 
@@ -43,16 +43,22 @@ class Voting extends React.Component<Store, {
       players,
       client,
     } = this.props;
+    const {
+      playerSelected,
+      hasCastVote,
+    } = this.state;
     const isDaylight = gameState.currentIdx === gameOptions.characters.length;
     if (isDaylight) {
       const conferenceEnd = extraInfo?.conferenceEndTime;
       if (conferenceEnd) {
         // if after end, send vote
-        if (Date.now() > conferenceEnd
-          && !this.state.hasCastVote
-          && this.state.playerSelected
+        if (playerSelected
+          && (!hasCastVote || hasCastVote.name !== playerSelected.name)
+          // && (this.state.hasCastVote
+            // && (this.state.hasCastVote.name !== this.state.playerSelected.name)
+          // )
         ) {
-          this.setState({ hasCastVote: true }, () => {
+          this.setState({ hasCastVote: this.state.playerSelected }, () => {
             client.send(JSON.stringify({
               action: WebSocketAction.CAST_VOTE,
               vote: this.state.playerSelected,
@@ -63,9 +69,6 @@ class Voting extends React.Component<Store, {
         const minutes = Math.floor(diff / 60);
         const seconds = (diff % 60).toString().padStart(2, '0');
 
-        const playerSelected = this.state.playerSelected
-          ? [this.state.playerSelected]
-          : [];
         return (
           <Modal
             size="lg"
@@ -81,7 +84,9 @@ class Voting extends React.Component<Store, {
             <h3>{minutes}:{seconds} remaining</h3>
             <Players
               players={players}
-              playersSelected={playerSelected}
+              playersSelected={playerSelected
+                ? [playerSelected]
+                : []}
               onPlayerClick={this.onPlayerClick}
             />
           </Modal>

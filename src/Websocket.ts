@@ -38,15 +38,16 @@ const START_BUFFER = 5 * 1000;
 
 const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
   const results: {
-    [playerId: string]: Character;
+    [name: string]: Character;
   } = {};
   const votes = {};
   const clients = getClientsInRoom(wss, roomId);
   let gameId;
   clients.forEach(client => {
-    results[client.playerId] = client.character;
+    results[client.name] = client.character;
 
     // set votes
+    console.log('v', client.vote);
     if (client.vote) {
 	    if (votes[client.vote]) {
 	      votes[client.vote] = votes[client.vote] + 1;
@@ -69,7 +70,7 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
   clients.forEach(client => client.send(JSON.stringify({
     action: WebSocketAction.GAME_END,
     results: {
-      ...results,
+      characterResults: results,
       middleCards,
       votes,
       log,
@@ -193,9 +194,8 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   const shuffled = shuffle(m.config.originalCharacters);
 
   // TODO DEBUGGING ONLY
-  /*
   shuffled.sort((a, b) => {
-    const c = 'Doppelganger';
+    const c = 'Mystic Wolf';
     if (a.name === c || a.name === 'Robber' ) {
       return 1;
     }
@@ -203,7 +203,6 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   });
   // shuffled.splice(0, 0, shuffled.pop());
   // TODO END DEBUGGING
-	 */
 
   const characterMap: { [key: string]: Character } = {};
   getClientsInRoom(webSocketServer, ws.roomId).forEach(client => {
@@ -271,9 +270,17 @@ export default (server) => {
             break;
           case WebSocketAction.CAST_VOTE:
             const { vote: { playerId } } = m;
+            // find player name
             // save it in an object on the client?
             ws.vote = playerId;
+            console.log('pid', playerId);
             const clientsForVote = getClientsInRoom(webSocketServer, ws.roomId);
+            clientsForVote.forEach(c => {
+              if (c.playerId === playerId) {
+                console.log('setting vote', c.playerId);
+                ws.vote = c.name;
+              }
+            });
             // then check all clients and if they all have a vote for this game id
             if (clientsForVote.every(c => c.vote)) {
               // send results to everyone

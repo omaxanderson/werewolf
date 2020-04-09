@@ -166,9 +166,13 @@ export const handleCharacterActions = async (
       break;
     case 'Doppelganger Mystic Wolf':
     case 'Mystic Wolf':
-      if (playersSelected.length) {
+      if (playersSelected?.length) {
         response.result = [findSelectedPlayerCharacter(clients, first)];
         response.message = `You have viewed the ${response.result[0].name}.`;
+        return response;
+      } else if (middleCardsSelected?.length) {
+        response.result = [middleCards[firstMiddle]];
+        response.message = `You saw the ${response.result[0].name} in the middle.`;
         return response;
       }
       break;

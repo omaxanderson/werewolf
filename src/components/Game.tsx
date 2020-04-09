@@ -70,18 +70,22 @@ class Game extends React.Component<Store, {
   };
 
   getGameResults = () => {
-    const { gameResults, players } = this.props;
-    const { middleCards, votes, log, ...rest } = gameResults;
-    const mappedToNames = Object.keys(rest).map(playerId => {
-      const { name: playerName } = players.find(p => p.playerId === playerId);
-      return [playerName, rest[playerId]];
-    });
+    const { gameResults } = this.props;
+    const {
+      middleCards,
+      votes,
+      log,
+      characterResults,
+    }: {
+      characterResults: { [name: string]: Character };
+      middleCards: Character[];
+      votes: { [name: string]: number };
+      log: LogItem[];
+    } = gameResults;
 
-    const mappedVotesToNames = Object.keys(votes).map(playerId => {
-      const { name: playerName } = players.find(p => p.playerId === playerId);
-      return [playerName, votes[playerId]];
-    });
-    mappedVotesToNames.sort(([_, a], [__, b]) => b - a);
+    const voteArr: [string, number][] = Object.entries(votes).map(entry => entry);
+    voteArr.sort(([_, a], [__, b]) => b - a);
+
     const readableLog = log?.map((logItem: LogItem) => {
       let str = `${logItem.player} as the ${logItem.as}: `;
       if (logItem.middleCardsSelected?.length > 0) {
@@ -98,9 +102,9 @@ class Game extends React.Component<Store, {
         <Row>
           <Column sm={12} md={4}>
             <Header h={3}>Players</Header>
-            {mappedToNames.map(([name, character]) => (
+            {Object.entries(characterResults).map(([name, character]) => (
               <div key={`result_${name}`}>
-                {name}: <strong>{character.name}</strong>
+                {name}: <strong>{(character as Character).name}</strong>
               </div>
             ))}
           </Column>
@@ -110,7 +114,7 @@ class Game extends React.Component<Store, {
           </Column>
           <Column sm={12} md={4}>
             <Header h={3}>Votes</Header>
-            {mappedVotesToNames.map(([name, votes], idx) => {
+            {voteArr.map(([name, votes], idx) => {
               const jsx = <div key={`vote_${name}`}>{name}: {votes}</div>;
               return idx === 0 ? <strong>{jsx}</strong> : jsx;
             })}
