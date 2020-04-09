@@ -139,6 +139,7 @@ export const handleCharacterActions = async (
     if (secondMiddle) logItem.middleCardsSelected.push(middleCards[secondMiddle].name);
 
     log.push(logItem);
+    console.log('e7');
     await storage.set(`log-${player.gameId}`, JSON.stringify(log));
   } catch (e) {
     console.log(`Error: ${e.message}`);

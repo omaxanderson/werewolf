@@ -222,6 +222,7 @@ export class Home extends React.Component<Store, {
     const { hex = false } = typeof isChangingColor === 'object' ? isChangingColor : {};
     const { client } = this.props;
     if (client && hex) {
+      console.log('e2');
       client.send(JSON.stringify({
         action: WebSocketAction.SET_COLOR,
         message: hex,

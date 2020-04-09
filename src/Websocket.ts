@@ -67,6 +67,7 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
 
   const log: LogItem[] = JSON.parse(await Redis.get(`log-${gameId}`));
 
+  console.log('e1');
   clients.forEach(client => client.send(JSON.stringify({
     action: WebSocketAction.GAME_END,
     results: {
@@ -89,6 +90,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
   if (fromCharacter === config.characters[state.currentIdx]?.name) {
     state.currentIdx += 1;
   }
+  console.log('e3');
   await Redis.set(`game-${gameId}`, JSON.stringify(state));
 
   const isDaylight = state.currentIdx >= config.characters.length;
@@ -138,6 +140,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
         conferenceEndTime: endTime,
       }
     }
+    console.log('e4');
     client.send(JSON.stringify(message));
   });
 };
@@ -180,7 +183,9 @@ const setupGame = async (config: GameOptions, roomId: string, wss: WebSocket.Ser
 
   // store game config and state
   try {
+    console.log('e5');
     await Redis.set(`config-${gameId}`, JSON.stringify(config));
+    console.log('e6');
     await Redis.set(`game-${gameId}`, JSON.stringify({
       currentIdx: -1,
     } as GameState));
@@ -210,6 +215,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
     client.startingCharacter = character;
     client.character = character;
     characterMap[client.playerId] = character;
+    console.log('e8');
     client.send(JSON.stringify({
       action: WebSocketAction.START_GAME,
       gameOptions: {
@@ -223,6 +229,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
     }));
   });
   try {
+    console.log('e9');
     await Redis.set(`characters-${m.config.gameId}`, JSON.stringify({
       characterMap,
       middleCards: shuffled,
@@ -246,12 +253,15 @@ export default (server) => {
   webSocketServer.on('connection', (webSocket: WebSocket, req: http.IncomingMessage) => {
     // Have to manually re-type this
     const ws = webSocket as MyWebSocket;
-    const {query: {id, name}} = parseUrl(req);
+    const {query: {id, name, playerId}} = parseUrl(req);
     if (!Array.isArray(id)) {
       ws.roomId = id;
     }
     if (!Array.isArray(name)) {
       ws.name = decodeURI(name);
+    }
+    if (!Array.isArray(playerId) && typeof playerId !== 'undefined') {
+      // load info from redis and add them back into the game?
     }
     ws.on('message', async (json: string) => {
       try {
@@ -323,6 +333,7 @@ export default (server) => {
               middleCards[
                 (m as unknown as { params: CharacterActionParams }).params.middleCardsSelected[0]
                 ] = ws.startingCharacter;
+              console.log('e10');
               await Redis.set(`characters-${ws.gameId}`, JSON.stringify({
                 ...redisData,
                 middleCards,
@@ -331,6 +342,7 @@ export default (server) => {
 
             if (originalStartingCharacterName === 'Doppelganger') {
               // this should only happen the first time the doppelganger takes an action
+              console.log('e11');
               ws.send(JSON.stringify({
                 action: WebSocketAction.UPDATE_CLIENT_STARTING_CHARACTER,
                 gameOptions: {
@@ -339,6 +351,7 @@ export default (server) => {
               }));
             }
 
+            console.log('e12');
             ws.send(JSON.stringify({
               action: WebSocketAction.ACTION_RESULT,
               ...actionResult,
@@ -355,6 +368,7 @@ export default (server) => {
               client.vote = null;
             });
             clientsToClear.forEach(client => {
+              console.log('e13');
               client.send(JSON.stringify({
                 action: WebSocketAction.GO_TO_SETUP,
               }));
@@ -362,6 +376,7 @@ export default (server) => {
 
             break;
           default:
+            console.log('e14');
             ws.send(JSON.stringify({
               message: `hello you sent: ${m.message}`,
               messageId: m.messageId,
@@ -381,6 +396,7 @@ export default (server) => {
             color: client.color,
             playerId: client.playerId,
         }));
+      console.log('e15');
       filteredClients.forEach(client => client.send(JSON.stringify({
         action: WebSocketAction.LIST_PLAYERS,
         players: simplified,
@@ -406,14 +422,17 @@ export default (server) => {
       color: client.color,
       playerId: client.playerId,
     }));
+    console.log('e16');
     clientsInRoom.forEach(client => client.send(JSON.stringify({
       action: WebSocketAction.PLAYER_JOINED,
       players: simplifiedClients,
     })));
+    console.log('e17');
     ws.send(JSON.stringify({
       action: WebSocketAction.LIST_PLAYERS,
       players: simplifiedClients,
     }));
+    console.log('e18');
     ws.send(JSON.stringify({
       action: WebSocketAction.SEND_PLAYER_ID,
       playerId: ws.playerId,
@@ -430,6 +449,7 @@ function sendPlayerList(wss: WebSocket.Server, ws: MyWebSocket) {
     playerId: client.playerId,
   }));
   clientsInRoom.forEach(client => {
+    console.log('e19');
     client.send(JSON.stringify({
       action: WebSocketAction.LIST_PLAYERS,
       players: simplifiedClients,
