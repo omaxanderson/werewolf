@@ -255,109 +255,113 @@ export default (server) => {
       ws.name = decodeURI(name);
     }
     ws.on('message', async (json: string) => {
-      const m: WebSocketMessage = JSON.parse(json);
-      const action = m.action;
-      switch (action) {
-        case WebSocketAction.START_GAME:
-          await onStartGame(webSocketServer, ws, m);
-          break;
-        case WebSocketAction.DEBUG__NEXT_CHARACTER:
-          await nextCharacterTurn(webSocketServer, ws.roomId, ws.gameId);
-          break;
-        case WebSocketAction.SET_COLOR:
-          ws.color = m.message;
-          sendPlayerList(webSocketServer, ws);
-          break;
-        case WebSocketAction.CAST_VOTE:
-          const { vote: { playerId } } = m;
-          // save it in an object on the client?
-          ws.vote = playerId;
-          const clientsForVote = getClientsInRoom(webSocketServer, ws.roomId);
-          // then check all clients and if they all have a vote for this game id
-          if (clientsForVote.every(c => c.vote)) {
-            // send results to everyone
-            await sendFinalCharacters(webSocketServer, ws.roomId);
-          }
-          break;
-        case WebSocketAction.CHARACTER_ACTION:
-          const allClients = getClientsInRoom(webSocketServer, ws.roomId);
-          const gameOptions = JSON.parse(await Redis.get(`config-${ws.gameId}`));
-          const gameState = JSON.parse(await Redis.get(`game-${ws.gameId}`));
-          if (!canTakeAction(
-            gameOptions,
-            gameState,
-            allClients,
-            ws,
-            ws.gameId,
-          )) {
-            console.log('no action for you');
+      try {
+        const m: WebSocketMessage = JSON.parse(json);
+        const action = m.action;
+        switch (action) {
+          case WebSocketAction.START_GAME:
+            await onStartGame(webSocketServer, ws, m);
             break;
-          } else {
-            // set current turn
-            const current = gameOptions.characters[gameState.currentIdx]?.name;
-            const actionStr = `${ws.gameId}-${current}-${ws.startingCharacter.name}`;
-            ws.actionTaken.push(actionStr);
-          }
-          const redisData = JSON.parse(await Redis.get(`characters-${ws.gameId}`));
-          const { middleCards } = redisData;
-          const originalStartingCharacterName = ws.startingCharacter?.name;
-          const actionResult = await handleCharacterActions(
-            allClients,
-            ws,
-            (m as unknown as { params: CharacterActionParams }).params,
-            middleCards,
-            Redis,
-          );
-
-          // this should really be handled by the handleCharacterActions but
-          // eh i'm lazy
-          if (ws.startingCharacter.name === 'Drunk') {
-            middleCards[
-              (m as unknown as { params: CharacterActionParams }).params.middleCardsSelected[0]
-            ] = ws.startingCharacter;
-            await Redis.set(`characters-${ws.gameId}`, JSON.stringify({
-              ...redisData,
+          case WebSocketAction.DEBUG__NEXT_CHARACTER:
+            await nextCharacterTurn(webSocketServer, ws.roomId, ws.gameId);
+            break;
+          case WebSocketAction.SET_COLOR:
+            ws.color = m.message;
+            sendPlayerList(webSocketServer, ws);
+            break;
+          case WebSocketAction.CAST_VOTE:
+            const { vote: { playerId } } = m;
+            // save it in an object on the client?
+            ws.vote = playerId;
+            const clientsForVote = getClientsInRoom(webSocketServer, ws.roomId);
+            // then check all clients and if they all have a vote for this game id
+            if (clientsForVote.every(c => c.vote)) {
+              // send results to everyone
+              await sendFinalCharacters(webSocketServer, ws.roomId);
+            }
+            break;
+          case WebSocketAction.CHARACTER_ACTION:
+            const allClients = getClientsInRoom(webSocketServer, ws.roomId);
+            const gameOptions = JSON.parse(await Redis.get(`config-${ws.gameId}`));
+            const gameState = JSON.parse(await Redis.get(`game-${ws.gameId}`));
+            if (!canTakeAction(
+              gameOptions,
+              gameState,
+              allClients,
+              ws,
+              ws.gameId,
+            )) {
+              console.log('no action for you');
+              break;
+            } else {
+              // set current turn
+              const current = gameOptions.characters[gameState.currentIdx]?.name;
+              const actionStr = `${ws.gameId}-${current}-${ws.startingCharacter.name}`;
+              ws.actionTaken.push(actionStr);
+            }
+            const redisData = JSON.parse(await Redis.get(`characters-${ws.gameId}`));
+            const { middleCards } = redisData;
+            const originalStartingCharacterName = ws.startingCharacter?.name;
+            const actionResult = await handleCharacterActions(
+              allClients,
+              ws,
+              (m as unknown as { params: CharacterActionParams }).params,
               middleCards,
-            }));
-          }
+              Redis,
+            );
 
-          if (originalStartingCharacterName === 'Doppelganger') {
-            // this should only happen the first time the doppelganger takes an action
+            // this should really be handled by the handleCharacterActions but
+            // eh i'm lazy
+            if (ws.startingCharacter.name === 'Drunk') {
+              middleCards[
+                (m as unknown as { params: CharacterActionParams }).params.middleCardsSelected[0]
+                ] = ws.startingCharacter;
+              await Redis.set(`characters-${ws.gameId}`, JSON.stringify({
+                ...redisData,
+                middleCards,
+              }));
+            }
+
+            if (originalStartingCharacterName === 'Doppelganger') {
+              // this should only happen the first time the doppelganger takes an action
+              ws.send(JSON.stringify({
+                action: WebSocketAction.UPDATE_CLIENT_STARTING_CHARACTER,
+                gameOptions: {
+                  startingCharacter: ws.startingCharacter,
+                }
+              }));
+            }
+
             ws.send(JSON.stringify({
-              action: WebSocketAction.UPDATE_CLIENT_STARTING_CHARACTER,
-              gameOptions: {
-                startingCharacter: ws.startingCharacter,
-              }
+              action: WebSocketAction.ACTION_RESULT,
+              ...actionResult,
             }));
-          }
+            break;
+          case WebSocketAction.NEW_GAME:
+            // clear out all game info from all room members
+            const clientsToClear = getClientsInRoom(webSocketServer, ws.roomId);
+            clientsToClear.forEach(client => {
+              client.gameId = null;
+              client.character = null;
+              client.startingCharacter = null;
+              client.actionTaken = [];
+              client.vote = null;
+            });
+            clientsToClear.forEach(client => {
+              client.send(JSON.stringify({
+                action: WebSocketAction.GO_TO_SETUP,
+              }));
+            });
 
-          ws.send(JSON.stringify({
-            action: WebSocketAction.ACTION_RESULT,
-            ...actionResult,
-          }));
-          break;
-        case WebSocketAction.NEW_GAME:
-          // clear out all game info from all room members
-          const clientsToClear = getClientsInRoom(webSocketServer, ws.roomId);
-          clientsToClear.forEach(client => {
-            client.gameId = null;
-            client.character = null;
-            client.startingCharacter = null;
-            client.actionTaken = [];
-            client.vote = null;
-          });
-          clientsToClear.forEach(client => {
-            client.send(JSON.stringify({
-              action: WebSocketAction.GO_TO_SETUP,
+            break;
+          default:
+            ws.send(JSON.stringify({
+              message: `hello you sent: ${m.message}`,
+              messageId: m.messageId,
             }));
-          });
-
-          break;
-        default:
-          ws.send(JSON.stringify({
-            message: `hello you sent: ${m.message}`,
-            messageId: m.messageId,
-          }));
+        }
+      } catch (e) {
+        console.log('error in websocket message', e);
       }
     });
 
