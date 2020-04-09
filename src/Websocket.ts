@@ -47,18 +47,22 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
     results[client.playerId] = client.character;
 
     // set votes
-    if (votes[client.vote]) {
-      votes[client.vote] = votes[client.vote] + 1;
-    } else {
-      votes[client.vote] = 1;
+    if (client.vote) {
+	    if (votes[client.vote]) {
+	      votes[client.vote] = votes[client.vote] + 1;
+	    } else {
+	      votes[client.vote] = 1;
+	    }
     }
     // get game id
     if (!gameId && client.gameId) {
       gameId = client.gameId;
     }
   });
+  console.log(1, `characters-${gameId}`);
+  console.log(2, await Redis.get(`characters-${gameId}`));
   const { middleCards } = JSON.parse(await Redis.get(`characters-${gameId}`));
-  results.middleCards = middleCards;
+  // results.middleCards = middleCards;
 
   const log: LogItem[] = JSON.parse(await Redis.get(`log-${gameId}`));
 
@@ -99,12 +103,10 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
     };
 
   if (isDaylight) {
-    /*
     setTimeout(
       () => sendFinalCharacters(wss, roomId),
       config.secondsToConference * 1000,
     );
-     */
   } else {
     const t = (config.secondsPerCharacter
       + (currentCharacter.name === 'Doppelganger' ? 10 : 0)) * 1000;

@@ -82,7 +82,7 @@ class Game extends React.Component<Store, {
       return [playerName, votes[playerId]];
     });
     mappedVotesToNames.sort(([_, a], [__, b]) => b - a);
-    const readableLog = log.map((logItem: LogItem) => {
+    const readableLog = log?.map((logItem: LogItem) => {
       let str = `${logItem.player} as the ${logItem.as}: `;
       if (logItem.middleCardsSelected?.length > 0) {
         str += `selected the ${
@@ -92,7 +92,7 @@ class Game extends React.Component<Store, {
         str += `selected ${logItem.playersSelected.join(' and ')}.`;
       }
       return str;
-    });
+    }) || [];
     return (
       <>
         <Row>

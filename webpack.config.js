@@ -17,7 +17,7 @@ const entries = (ext) => {
 
 const jsConfig = {
     devtool: 'source-map',
-    mode: 'development',
+    mode: process.env.BUILD_MODE || 'development',
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.jsx', '.scss', '.css'],
     },

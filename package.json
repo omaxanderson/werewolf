@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:react": "webpack && mkdir -p ./dist/public/js && cp src/public/js/* ./dist/public/js",
+    "build:react": "BUILD_MODE=production webpack && mkdir -p ./dist/public/js && cp src/public/js/* ./dist/public/js",
     "build:server": "mkdir -p dist/views && cp ./src/views/* ./dist/views && tsc",
     "build": "npm run build:server && npm run build:react",
     "start": "npm run build && node ./dist/app.js",
