@@ -106,5 +106,7 @@ export interface IGame {
   gameId: string;
   nextCharacterTimer?: Timeout;
   resultsTimer?: Timeout;
+  startTimeInMs?: number;
   endTimeInMs?: number;
+  timeRemainingInMs?: number;
 }

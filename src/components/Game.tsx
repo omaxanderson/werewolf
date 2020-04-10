@@ -1,5 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import isEqual from 'lodash/isEqual';
 import classNames from 'classnames';
 import { Character, Team } from "./Characters";
 import { IPlayer, LogItem } from './Interfaces';
@@ -36,23 +37,24 @@ class Game extends React.Component<Store, {
   }
 
   componentDidUpdate(prevProps, prevState): void {
-    if (prevProps.extraInfo !== this.props.extraInfo) {
+    if (!isEqual(prevProps.extraInfo, this.props.extraInfo)) {
       this.setState({ infoDidChange: true }, () => {
         setTimeout(() => this.setState({ infoDidChange: false }), 5000);
       });
     }
-    if (prevProps.actionResult !== this.props.actionResult) {
+    if (!isEqual(prevProps.actionResult, this.props.actionResult)) {
       this.setState({ resultsDidChange: true }, () => {
         setTimeout(() => this.setState({ resultsDidChange: false }), 5000);
       });
     }
-  }
 
-  componentDidMount(): void {
     /*
-    this.getPositionInGame();
-    this.interval = setInterval(this.getPositionInGame, INTERVAL);
-     */
+    // we just started voting, clear players selected
+    if (typeof prevProps.gameResults === 'undefined'
+      && typeof this.props.gameResults !== 'undefined') {
+      this.setState({ playersSelected: [] });
+    }
+    */
   }
 
   componentWillUnmount(): void {
@@ -172,7 +174,6 @@ class Game extends React.Component<Store, {
       },
     ];
 
-    let extraJsx;
     let onMiddleCardClick = (idx: number) => {};
     let onPlayerClick = (player: any) => {};
     const isMyTurn = this.isMyTurn();

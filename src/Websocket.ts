@@ -41,7 +41,8 @@ const pauseGame = (gameId: string) => {
   }
   if (game.resultsTimer) {
     clearTimeout(game.resultsTimer);
-    // game.resultsTimer =
+    game.timeRemainingInMs = game.endTimeInMs - Date.now();
+    console.log('time rem', game.timeRemainingInMs);
   }
   if (game.nextCharacterTimer) {
     clearTimeout(game.nextCharacterTimer);
@@ -62,18 +63,14 @@ const resumeGame = async (wss: WebSocket.Server, roomId: string, gameId: string)
   try {
     const {
       secondsPerCharacter,
-      secondsToConference,
       characters,
     } = JSON.parse(await Redis.get(`config-${gameId}`));
     const { currentIdx } = JSON.parse(await Redis.get(`game-${gameId}`));
     if (currentIdx >= characters.length) {
       // const time till end
-      const msTilEnd = (game?.endTimeInMs - Date.now()) || (secondsToConference * 1000);
-      console.log(game?.endTimeInMs);
-      console.log('msTilEnd', msTilEnd);
       game.resultsTimer = setTimeout(
         () => sendFinalCharacters(wss, roomId),
-        msTilEnd
+        game.timeRemainingInMs,
       );
     } else {
       game.nextCharacterTimer = setTimeout(
@@ -177,6 +174,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
       () => sendFinalCharacters(wss, roomId),
       config.secondsToConference * 1000,
     );
+    game.startTimeInMs = Date.now();
     game.endTimeInMs = Date.now() + (config.secondsToConference * 1000);
   } else {
     const t = (config.secondsPerCharacter
@@ -346,14 +344,6 @@ export default (server) => {
               }));
             });
             break;
-          case WebSocketAction.CANCEL_GAME:
-            cancelGame(ws.gameId);
-            getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
-              c.send(JSON.stringify({
-                action: WebSocketAction.GAME_IS_CANCELLED,
-              }));
-            });
-            break;
           case WebSocketAction.RESUME_GAME:
             await resumeGame(webSocketServer, ws.roomId, ws.gameId);
             getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
@@ -462,7 +452,9 @@ export default (server) => {
               ...actionResult,
             }));
             break;
+          case WebSocketAction.CANCEL_GAME:
           case WebSocketAction.NEW_GAME:
+            cancelGame(ws.gameId);
             // clear out all game info from all room members
             const clientsToClear = getClientsInRoom(webSocketServer, ws.roomId);
             clientsToClear.forEach(client => {

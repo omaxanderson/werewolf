@@ -113,6 +113,7 @@ export default (state: Store = initialState, action) => {
         gameOptions: {
           ...state.gameOptions,
           ...defaultGameOptions,
+          characters: state.gameOptions.originalCharacters,
         },
         extraInfo: [],
         actionResult: [],
