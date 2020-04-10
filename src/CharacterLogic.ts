@@ -133,8 +133,9 @@ export const handleCharacterActions = async (
     // conditionaly add the log items, kinda gross but whatever
     if (first) logItem.playersSelected.push(`${first.name} (${findSelectedPlayerCharacter(clients, first).name})`);
     if (second) logItem.playersSelected.push(`${second.name} (${findSelectedPlayerCharacter(clients, second).name})`);
-    if (firstMiddle) logItem.middleCardsSelected.push(middleCards[firstMiddle].name);
-    if (secondMiddle) logItem.middleCardsSelected.push(middleCards[secondMiddle].name);
+    if (typeof firstMiddle !== 'undefined') logItem.middleCardsSelected.push(middleCards[firstMiddle].name);
+    if (typeof secondMiddle !== 'undefined') logItem.middleCardsSelected.push(middleCards[secondMiddle].name);
+    console.log('logItem', logItem);
 
     log.push(logItem);
     console.log('e7');

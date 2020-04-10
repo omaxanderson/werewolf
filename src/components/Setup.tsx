@@ -168,7 +168,7 @@ class Setup extends React.Component<Store & { onGameStart }, {
       <>
         <Row>
           <Column sm={12}>
-            <h3 style={{ marginBottom: '0px' }}>
+            <h3 style={{ marginBottom: '0px', marginTop: '0px' }}>
               In the Game
             </h3>
           </Column>

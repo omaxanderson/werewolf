@@ -344,7 +344,26 @@ class Game extends React.Component<Store, {
 
     return (
       <>
-        <Voting />
+        { /*<Voting /> */}
+        { /* <Button onClick={this.debugStepForward}>Next</Button> */ }
+        {gameResults && <div>The results are in!</div>}
+        {startingCharacter && !gameResults &&
+          <div className={style.HeaderInfo}>
+            <Row>
+              <Column sm={6} md={2}>
+                <div className={style.Me}>
+                  You are the
+                  <h2 className={style.StartingCharacterHeader}>
+                    {startingCharacter.name}
+                  </h2>
+                </div>
+              </Column>
+              <Column sm={6} md={10}>
+                <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
+              </Column>
+            </Row>
+          </div>
+        }
         <Row>
           <Column sm={6}>
             <div className={classNames(style.Box, {
@@ -369,24 +388,33 @@ class Game extends React.Component<Store, {
             </div>
           </Column>
         </Row>
-        <Header h={2} spacing="sm">{characterHeader}</Header>
-        <div className={style.RibbonContainer}>
-          <Ribbon characters={ribbonItems} idx={gameState.currentIdx + 1} />
-        </div>
-        <Header h={2}>Players</Header>
-        <Players
-          players={players}
-          playersSelected={this.state.playersSelected}
-          onPlayerClick={onPlayerClick}
-        />
-        <Header h={2}>Middle Cards</Header>
-        <div className={style.RibbonContainer}>
-          <Ribbon characters={[
-            { name: 'Middle Card', color: '#ACAEB0', key: 'm1', highlighted: this.state.middleCardsSelected.includes(0) },
-            { name: 'Middle Card', color: '#ACAEB0', key: 'm2', highlighted: this.state.middleCardsSelected.includes(1)  },
-            { name: 'Middle Card', color: '#ACAEB0', key: 'm3', highlighted: this.state.middleCardsSelected.includes(2)  },
-          ]} idx={-1} onClick={onMiddleCardClick}/>
-        </div>
+        {isDaylight
+          ? (
+            <Voting />
+          ) : (
+            <Row>
+              <Column sm={12} md={6}>
+                <Header h={2}>Players</Header>
+                <Players
+                  players={players}
+                  playersSelected={this.state.playersSelected}
+                  onPlayerClick={onPlayerClick}
+                />
+              </Column>
+              <Column sm={12} md={6}>
+                <Header h={2}>Middle Cards</Header>
+                <Ribbon
+                  characters={[
+                    { name: 'Middle Card', color: '#ACAEB0', key: 'm1', highlighted: this.state.middleCardsSelected.includes(0) },
+                    { name: 'Middle Card', color: '#ACAEB0', key: 'm2', highlighted: this.state.middleCardsSelected.includes(1)  },
+                    { name: 'Middle Card', color: '#ACAEB0', key: 'm3', highlighted: this.state.middleCardsSelected.includes(2)  },
+                  ]}
+                  idx={-1}
+                  onClick={onMiddleCardClick}
+                />
+              </Column>
+            </Row>
+        )}
       </>
     );
   };
@@ -434,32 +462,20 @@ class Game extends React.Component<Store, {
 
   render() {
     const {
-      gameOptions,
       gameResults,
       gameState: {
         paused,
       },
     } = this.props;
-    const { startingCharacter } = gameOptions;
     let jsx = this.getGameBody();
     return (
       <>
-        { /* <Button onClick={this.debugStepForward}>Next</Button> */ }
-        {gameResults && <div>The results are in!</div>}
-        {startingCharacter && !gameResults &&
-          <div className={style.Me}>
-            <div className={style.x}>You are the</div>
-            <h2 className={style.Title}>
-              {startingCharacter.name}
-            </h2>
-          </div>
-        }
         {jsx}
         {!gameResults &&
-          <>
+          <div className={style.GameButtons}>
             <Button onClick={paused ? this.resumeGame : this.pauseGame}>{paused ? 'Resume' : 'Pause'} Game</Button>
             <Button onClick={this.cancelGame}>Cancel Game</Button>
-          </>
+          </div>
         }
       </>
     )

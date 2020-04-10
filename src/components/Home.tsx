@@ -93,7 +93,7 @@ export class Home extends React.Component<Store, {
           case WebSocketAction.GAME_IS_CANCELLED:
             this.props.dispatch({
               type: ReduxAction.GAME_STATUS_UPDATE,
-              payload: m.action,
+              payload: m,
             });
             break;
           case WebSocketAction.PLAYER_JOINED:
@@ -260,7 +260,7 @@ export class Home extends React.Component<Store, {
       me.color = color;
     }
     return (
-      <div>
+      <div className={style.Container}>
         <Modal
           isOpen={isChangingColor}
           header="Change Color"

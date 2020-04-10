@@ -24,11 +24,28 @@ class Voting extends React.Component<Store, {
   }
 
   componentDidMount(): void {
-    this.interval = setInterval(() => this.forceUpdate(), 1000);
+    this.setTimerInterval();
   }
 
   componentWillUnmount(): void {
+    this.clearTimerInterval();
+  }
+
+  setTimerInterval = () => {
+    this.interval = setInterval(() => this.forceUpdate(), 1000);
+  };
+
+  clearTimerInterval = () => {
     clearInterval(this.interval);
+    this.interval = null;
+  };
+
+  componentDidUpdate(prevProps: Readonly<Store>) {
+    if (prevProps.gameState?.paused && this.interval) {
+      this.clearTimerInterval();
+    } else if (prevProps.gameState?.paused && !this.props.gameState?.paused) {
+      this.setTimerInterval();
+    }
   }
 
   onPlayerClick = (player) => {
@@ -49,7 +66,7 @@ class Voting extends React.Component<Store, {
     } = this.state;
     const isDaylight = gameState.currentIdx === gameOptions.characters.length;
     if (isDaylight) {
-      const conferenceEnd = extraInfo.find(e=> e.conferenceEndTime)?.conferenceEndTime;
+      const conferenceEnd = extraInfo.find(e => e.conferenceEndTime)?.conferenceEndTime;
       if (conferenceEnd) {
         // if after end, send vote
         if (playerSelected
@@ -67,17 +84,7 @@ class Voting extends React.Component<Store, {
         const seconds = (diff % 60).toString().padStart(2, '0');
 
         return (
-          <Modal
-            size="lg"
-            header="Cast Your Votes"
-            footerActions={[
-              {
-                type: 'secondary',
-                onClick: () => console.log('no'),
-                label: 'Leave',
-              },
-            ]}
-          >
+          <>
             <h3>{minutes}:{seconds} remaining</h3>
             <Players
               players={players}
@@ -86,7 +93,7 @@ class Voting extends React.Component<Store, {
                 : []}
               onPlayerClick={this.onPlayerClick}
             />
-          </Modal>
+          </>
         )
       }
     }

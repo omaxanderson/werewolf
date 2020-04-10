@@ -6,14 +6,27 @@
 }
 
 .RibbonContainer {
-  margin: 10px 0;
   padding: 10px;
   border: 1px solid #ccc;
 }
 
+.HeaderInfo {
+  position: sticky;
+}
+
 .Me {
-  border-bottom: 1px solid #ccc;
-  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.StartingCharacterHeader {
+  margin: 5px;
 }
 
 .x {
@@ -33,6 +46,8 @@
   border: 1px solid #ccc;
   padding: 15px;
   transition: 1s ease-in;
+  height: 100%;
+  box-sizing: border-box;
 
   &__Header {
     margin-top: 0px;
@@ -43,3 +58,4 @@
     transition: none;
   }
 }
+

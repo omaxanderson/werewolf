@@ -133,16 +133,21 @@ export default (state: Store = initialState, action) => {
     case ReduxAction.GAME_STATUS_UPDATE:
       const extraInfoGameState = [...state.extraInfo];
       const gameState = {...state.gameState};
-      if (payload === WebSocketAction.GAME_IS_CANCELLED) {
+      if (payload.action === WebSocketAction.GAME_IS_CANCELLED) {
         extraInfoGameState.push({
           directions: 'The game has been cancelled.',
         });
-      } else if (payload === WebSocketAction.GAME_IS_PAUSED) {
+      } else if (payload.action === WebSocketAction.GAME_IS_PAUSED) {
         extraInfoGameState.push({
           directions: 'The game has been paused.',
         });
         gameState.paused = true;
-      } else if (payload === WebSocketAction.GAME_IS_RESUMED) {
+      } else if (payload.action === WebSocketAction.GAME_IS_RESUMED) {
+        extraInfoGameState.forEach(e => {
+          if (e.conferenceEndTime && payload.endTime) {
+            e.conferenceEndTime = payload.endTime;
+          }
+        });
         extraInfoGameState.push({
           directions: 'The game has been resumed.',
         });

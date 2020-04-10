@@ -57,7 +57,7 @@ const cancelGame = (gameId: string) => {
   games.splice(idx, 1);
 };
 
-const resumeGame = async (wss: WebSocket.Server, roomId: string, gameId: string) => {
+const resumeGame = async (wss: WebSocket.Server, roomId: string, gameId: string): Promise<number | undefined> => {
   const game = games.find(g => g.gameId === gameId);
   // get config
   try {
@@ -72,6 +72,7 @@ const resumeGame = async (wss: WebSocket.Server, roomId: string, gameId: string)
         () => sendFinalCharacters(wss, roomId),
         game.timeRemainingInMs,
       );
+      return Date.now() + game.timeRemainingInMs;
     } else {
       game.nextCharacterTimer = setTimeout(
         () => nextCharacterTurn(wss, roomId, gameId),
@@ -345,11 +346,15 @@ export default (server) => {
             });
             break;
           case WebSocketAction.RESUME_GAME:
-            await resumeGame(webSocketServer, ws.roomId, ws.gameId);
+            const newEndTime = await resumeGame(webSocketServer, ws.roomId, ws.gameId);
+            const resumeResponse: { action: WebSocketAction; endTime?: number } = {
+              action: WebSocketAction.GAME_IS_RESUMED,
+            };
+            if (newEndTime) {
+              resumeResponse.endTime = newEndTime;
+            }
             getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
-              c.send(JSON.stringify({
-                action: WebSocketAction.GAME_IS_RESUMED,
-              }));
+              c.send(JSON.stringify(resumeResponse));
             });
             break;
           case WebSocketAction.START_GAME:
