@@ -278,6 +278,17 @@ export default (server) => {
             ws.color = m.message;
             sendPlayerList(webSocketServer, ws);
             break;
+          case WebSocketAction.UPDATE_GAME_CONFIG:
+            // only update config if the game isn't going on right now
+            if (!ws.gameId) {
+              const { config } = m;
+              getClientsInRoom(webSocketServer, ws.roomId)
+                .forEach(c => c.send(JSON.stringify({
+                  action: WebSocketAction.UPDATE_GAME_CONFIG,
+                  gameOptions: config,
+                })));
+            }
+            break;
           case WebSocketAction.CAST_VOTE:
             const { vote: { playerId } } = m;
             // find player name

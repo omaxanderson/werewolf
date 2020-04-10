@@ -33,9 +33,7 @@ export interface ActionResponse {
   info?: ICharacterExtraData;  // extra info i.e. doppel becomes minion, gets allwerewolves
 }
 
-export interface GameState extends GameOptions {
-  current: Character;
-  next: Character;
+export interface GameState {
   currentIdx: number;
 }
 export interface Store {

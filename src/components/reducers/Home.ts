@@ -2,8 +2,18 @@ import { DispatchObject, Store, ReduxAction } from '../Interfaces';
 import { WebSocketAction } from '../../IWebsocket';
 
 const initialState = {
-  gameState: null,
-  gameOptions: null,
+  gameState: {
+    currentIdx: -1,
+  },
+  gameOptions: {
+    characters: [],
+    secondsToConference: 10,
+    secondsPerCharacter: 7,
+    gameId: '',
+    originalCharacters: [],
+    startingCharacter: null,
+    conferenceStart: null,
+  },
   roomId: null,
   players: [],
   client: null,
@@ -33,6 +43,7 @@ export default (state: Store = initialState, action) => {
         roomId: payload,
       };
     case ReduxAction.UPDATE_GAME_OPTIONS:
+      console.log('updating state');
       return {
         ...state,
         gameOptions: payload,

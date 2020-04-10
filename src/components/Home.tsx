@@ -119,6 +119,12 @@ export class Home extends React.Component<Store, {
               payload: m,
             });
             break;
+          case WebSocketAction.UPDATE_GAME_CONFIG:
+            this.props.dispatch({
+              type: ReduxAction.UPDATE_GAME_OPTIONS,
+              payload: m.gameOptions,
+            });
+            break;
           case WebSocketAction.GAME_END:
             this.props.dispatch({
               type: ReduxAction.GAME_END,
@@ -188,7 +194,7 @@ export class Home extends React.Component<Store, {
       client,
     } = this.props;
 
-    if (gameOptions) {
+    if (gameOptions.gameId) {
       return <Game />;
     } else if (client) {
       return (<Setup />
