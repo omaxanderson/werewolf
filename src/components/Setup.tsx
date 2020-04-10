@@ -103,7 +103,6 @@ class Setup extends React.Component<Store & { onGameStart }, {
     : this.props.gameOptions?.characters?.length - 3;
 
   onCharacterChange = (checked, e) => {
-    console.log('checked', checked);
     const {
       value,
     } = e.target;
@@ -159,17 +158,12 @@ class Setup extends React.Component<Store & { onGameStart }, {
         secondsToConference,
       },
     } = this.props;
-    console.log('rendering', characters);
     const [ werewolfTeam, selfTeam, villagerTeam ] = [
       C.filter(c => [Team.WEREWOLF, Team.WEREWOLF_ALLY].includes(c.team)),
       C.filter(c => [Team.SELF, Team.UNKNOWN].includes(c.team)),
       C.filter(c => [Team.VILLAGER].includes(c.team)),
     ];
-    const testFunc = (character) => {
-      const a = Boolean(characters.find(c => c.key === character.key));
-      console.log('test', a);
-      return a;
-    };
+    const testFunc = (character) => Boolean(characters.find(c => c.key === character.key));
     return (
       <>
         <Row>

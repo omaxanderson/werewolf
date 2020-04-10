@@ -1,18 +1,24 @@
 import { DispatchObject, Store, ReduxAction } from '../Interfaces';
 import { WebSocketAction } from '../../IWebsocket';
 
+const defaultGameOptions = {
+  characters: [],
+  // secondsToConference: 10,
+  // secondsPerCharacter: 7,
+  gameId: '',
+  originalCharacters: [],
+  startingCharacter: null,
+  conferenceStart: null,
+};
+
 const initialState = {
   gameState: {
     currentIdx: -1,
   },
   gameOptions: {
-    characters: [],
+    ...defaultGameOptions,
     secondsToConference: 10,
     secondsPerCharacter: 7,
-    gameId: '',
-    originalCharacters: [],
-    startingCharacter: null,
-    conferenceStart: null,
   },
   roomId: null,
   players: [],
@@ -103,8 +109,11 @@ export default (state: Store = initialState, action) => {
       return {
         ...state,
         gameResults: null,
-        gameState: null,
-        gameOptions: null,
+        gameState: {},
+        gameOptions: {
+          ...state.gameOptions,
+          ...defaultGameOptions,
+        },
         extraInfo: [],
         actionResult: [],
       };
@@ -120,6 +129,29 @@ export default (state: Store = initialState, action) => {
           startingCharacter: payload?.gameOptions?.startingCharacter,
         }
       };
+    case ReduxAction.GAME_STATUS_UPDATE:
+      const extraInfoGameState = [...state.extraInfo];
+      const gameState = {...state.gameState};
+      if (payload === WebSocketAction.GAME_IS_CANCELLED) {
+        extraInfoGameState.push({
+          directions: 'The game has been cancelled.',
+        });
+      } else if (payload === WebSocketAction.GAME_IS_PAUSED) {
+        extraInfoGameState.push({
+          directions: 'The game has been paused.',
+        });
+        gameState.paused = true;
+      } else if (payload === WebSocketAction.GAME_IS_RESUMED) {
+        extraInfoGameState.push({
+          directions: 'The game has been resumed.',
+        });
+        gameState.paused = false;
+      }
+      return {
+      ...state,
+        extraInfo: extraInfoGameState,
+        gameState,
+    };
     case ReduxAction.START_GAME:
       // send the websocket message
       console.log('starting game', payload);

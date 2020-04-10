@@ -12,7 +12,6 @@ import {
   Row,
   Column,
   Header,
-  Modal,
 } from '@omaxwellanderson/react-components';
 import Players from './Players';
 import Voting from './Voting';
@@ -414,10 +413,31 @@ class Game extends React.Component<Store, {
     }));
   };
 
+  pauseGame = () => {
+    this.props.client.send(JSON.stringify({
+      action: WebSocketAction.PAUSE_GAME,
+    }));
+  };
+
+  resumeGame = () => {
+    this.props.client.send(JSON.stringify({
+      action: WebSocketAction.RESUME_GAME,
+    }));
+  };
+
+  cancelGame = () => {
+    this.props.client.send(JSON.stringify({
+      action: WebSocketAction.CANCEL_GAME,
+    }));
+  };
+
   render() {
     const {
       gameOptions,
       gameResults,
+      gameState: {
+        paused,
+      },
     } = this.props;
     const { startingCharacter } = gameOptions;
     let jsx = this.getGameBody();
@@ -434,6 +454,12 @@ class Game extends React.Component<Store, {
           </div>
         }
         {jsx}
+        {!gameResults &&
+          <>
+            <Button onClick={paused ? this.resumeGame : this.pauseGame}>{paused ? 'Resume' : 'Pause'} Game</Button>
+            <Button onClick={this.cancelGame}>Cancel Game</Button>
+          </>
+        }
       </>
     )
   }

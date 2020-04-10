@@ -88,6 +88,14 @@ export class Home extends React.Component<Store, {
       if (typeof json.data === 'string') {
         const m = JSON.parse(json.data);
         switch (m.action) {
+          case WebSocketAction.GAME_IS_PAUSED:
+          case WebSocketAction.GAME_IS_RESUMED:
+          case WebSocketAction.GAME_IS_CANCELLED:
+            this.props.dispatch({
+              type: ReduxAction.GAME_STATUS_UPDATE,
+              payload: m.action,
+            });
+            break;
           case WebSocketAction.PLAYER_JOINED:
           case WebSocketAction.LIST_PLAYERS:
             this.props.dispatch({

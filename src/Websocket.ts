@@ -5,7 +5,14 @@ import shuffle from 'lodash/shuffle';
 import { v4 } from 'uuid';
 import Redis from './Redis';
 import parseUrl from "./util/parseUrl";
-import { CharacterActionParams, GameOptions, GameState, ICharacterExtraData, LogItem } from './components/Interfaces';
+import {
+  CharacterActionParams,
+  GameOptions,
+  GameState,
+  ICharacterExtraData,
+  IGame,
+  LogItem
+} from './components/Interfaces';
 import { Character, Team } from './components/Characters';
 import shortId from './util/shortId';
 import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
@@ -23,6 +30,61 @@ export interface MyWebSocket extends WebSocket {
   actionTaken: string[];
   vote: string, // going to be the playerId
 }
+
+// i feel like this is not the way to do this but whatever
+const games: IGame[] = [];
+
+const pauseGame = (gameId: string) => {
+  const game = games.find(g => g.gameId === gameId);
+  if (!game) {
+    return;
+  }
+  if (game.resultsTimer) {
+    clearTimeout(game.resultsTimer);
+    // game.resultsTimer =
+  }
+  if (game.nextCharacterTimer) {
+    clearTimeout(game.nextCharacterTimer);
+  }
+};
+
+const cancelGame = (gameId: string) => {
+  const idx = games.findIndex(g => g.gameId === gameId);
+  // clear the intervals
+  pauseGame(gameId);
+  // remove from array
+  games.splice(idx, 1);
+};
+
+const resumeGame = async (wss: WebSocket.Server, roomId: string, gameId: string) => {
+  const game = games.find(g => g.gameId === gameId);
+  // get config
+  try {
+    const {
+      secondsPerCharacter,
+      secondsToConference,
+      characters,
+    } = JSON.parse(await Redis.get(`config-${gameId}`));
+    const { currentIdx } = JSON.parse(await Redis.get(`game-${gameId}`));
+    if (currentIdx >= characters.length) {
+      // const time till end
+      const msTilEnd = (game?.endTimeInMs - Date.now()) || (secondsToConference * 1000);
+      console.log(game?.endTimeInMs);
+      console.log('msTilEnd', msTilEnd);
+      game.resultsTimer = setTimeout(
+        () => sendFinalCharacters(wss, roomId),
+        msTilEnd
+      );
+    } else {
+      game.nextCharacterTimer = setTimeout(
+        () => nextCharacterTurn(wss, roomId, gameId),
+        secondsPerCharacter * 1000,
+      );
+    }
+  } catch (e) {
+    console.log('error resuming game', e.message);
+  }
+};
 
 const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
   const clients: MyWebSocket[] = [];
@@ -77,6 +139,9 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
       log,
     },
   })));
+
+  const game = games.find(g => g.gameId === gameId);
+  clearTimeout(game.resultsTimer);
 };
 
 const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: string) => {
@@ -105,15 +170,18 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
       doppel: false,
     };
 
+  const game = games.find(g => g.gameId === gameId);
+
   if (isDaylight) {
-    setTimeout(
+    game.resultsTimer = setTimeout(
       () => sendFinalCharacters(wss, roomId),
       config.secondsToConference * 1000,
     );
+    game.endTimeInMs = Date.now() + (config.secondsToConference * 1000);
   } else {
     const t = (config.secondsPerCharacter
       + (currentCharacter.name === 'Doppelganger' ? 10 : 0)) * 1000;
-    setTimeout(
+    game.nextCharacterTimer = setTimeout(
       () => nextCharacterTurn(wss, roomId, gameId),
       t,
     );
@@ -154,9 +222,6 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
 const setupGame = async (config: GameOptions, roomId: string, wss: WebSocket.Server) => {
   const {
     characters: charactersConfig,
-    // todo set a timeout to push the next_character info
-    // instead of relying on input
-    secondsPerCharacter,
   } = config;
   // Add doppleganger characters when necessary
   const hasDoppelganger = charactersConfig.some(c => c.key === 'doppelganger');
@@ -201,7 +266,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
     const c = 'Doppelganger';
-    if (a.name === c /* || a.name === 'Werewolf' */ ) {
+    if (a.name === c || a.name === 'Mason') {
       return 1;
     }
     return -1;
@@ -239,10 +304,15 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   }
 
   //set timeout to start the game
-  setTimeout(
-    () => nextCharacterTurn(webSocketServer, ws.roomId, m.config.gameId),
-    START_BUFFER,
-  );
+  const game: IGame = {
+    gameId: m.config.gameId,
+    nextCharacterTimer: setTimeout(
+      () => nextCharacterTurn(webSocketServer, ws.roomId, m.config.gameId),
+      START_BUFFER,
+    ),
+  };
+
+  games.push(game);
 };
 
 /**
@@ -268,6 +338,30 @@ export default (server) => {
         const m: WebSocketMessage = JSON.parse(json);
         const action = m.action;
         switch (action) {
+          case WebSocketAction.PAUSE_GAME:
+            pauseGame(ws.gameId);
+            getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
+              c.send(JSON.stringify({
+                action: WebSocketAction.GAME_IS_PAUSED,
+              }));
+            });
+            break;
+          case WebSocketAction.CANCEL_GAME:
+            cancelGame(ws.gameId);
+            getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
+              c.send(JSON.stringify({
+                action: WebSocketAction.GAME_IS_CANCELLED,
+              }));
+            });
+            break;
+          case WebSocketAction.RESUME_GAME:
+            await resumeGame(webSocketServer, ws.roomId, ws.gameId);
+            getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
+              c.send(JSON.stringify({
+                action: WebSocketAction.GAME_IS_RESUMED,
+              }));
+            });
+            break;
           case WebSocketAction.START_GAME:
             await onStartGame(webSocketServer, ws, m);
             break;

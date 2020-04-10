@@ -53,10 +53,7 @@ class Voting extends React.Component<Store, {
       if (conferenceEnd) {
         // if after end, send vote
         if (playerSelected
-          && (!hasCastVote || hasCastVote.name !== playerSelected.name)
-          // && (this.state.hasCastVote
-            // && (this.state.hasCastVote.name !== this.state.playerSelected.name)
-          // )
+          && (!hasCastVote || (hasCastVote.name !== playerSelected.name))
         ) {
           this.setState({ hasCastVote: this.state.playerSelected }, () => {
             client.send(JSON.stringify({

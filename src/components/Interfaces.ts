@@ -1,6 +1,7 @@
 import { Character } from './Characters';
 import * as WebSocket from 'websocket';
 import { MyWebSocket } from '../Websocket';
+import Timeout = NodeJS.Timeout;
 
 export function isCharacter(c: Character | any): c is Character {
   return c && ((c as Character).name !== undefined);
@@ -25,6 +26,7 @@ export enum ReduxAction {
   GAME_END = 'GAME_END',
   GO_TO_SETUP = 'GO_TO_SETUP',
   UPDATE_STARTING_CHARACTER = 'UPDATE_STARTING_CHARACTER',
+  GAME_STATUS_UPDATE = 'GAME_STATUS_UPDATE',
 }
 
 export interface ActionResponse {
@@ -35,6 +37,7 @@ export interface ActionResponse {
 
 export interface GameState {
   currentIdx: number;
+  paused?: boolean;
 }
 export interface Store {
   gameOptions: GameOptions;
@@ -97,4 +100,11 @@ export interface LogItem {
   as: string;
   playersSelected?: string[];
   middleCardsSelected?: string[];
+}
+
+export interface IGame {
+  gameId: string;
+  nextCharacterTimer?: Timeout;
+  resultsTimer?: Timeout;
+  endTimeInMs?: number;
 }

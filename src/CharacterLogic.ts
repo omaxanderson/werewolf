@@ -19,7 +19,6 @@ export const getCharacterTurnInfo = (
   const doppelgangerInfoTurns = {
     Werewolf: ['Werewolf', 'Mystic Wolf', 'Doppelganger Werewolf', 'Doppelganger Mystic Wolf'],
     Mason: ['Mason', 'Doppelganger Mason'],
-    Minion: ['Minion', 'Doppelganger Minion'],
   };
 
   if (Object.keys(doppelgangerInfoTurns).includes(currentCharacter.name)) {
@@ -157,7 +156,7 @@ export const handleCharacterActions = async (
         // todo when they become minion need to send relevant data back
         if (originalName === 'Minion') {
           const extraMinionInfo = getCharacterTurnInfo({
-            name: originalName,
+            name: player.startingCharacter.name,
           }, clients, player);
           response.info = extraMinionInfo;
         }
