@@ -80,8 +80,8 @@ export type IWebSocket = Pick<
   >;
 
 export interface ICharacterExtraData {
-  allWerewolves?: { name: string; playerId: string; }[];
-  allMasons?: MyWebSocket[];
+  allWerewolves?: Pick<MyWebSocket, 'name' | 'playerId'>[];
+  allMasons?: Pick<MyWebSocket, 'name' | 'playerId'>[];
   insomniac?: Character;
   conferenceEndTime?: number;
 }

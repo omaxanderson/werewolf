@@ -50,7 +50,7 @@ export const getCharacterTurnInfo = (
       break;
     case 'Doppelganger Mason':
     case 'Mason':
-      const allMasons: MyWebSocket[] = [];
+      const allMasons: { name: string; playerId: string; }[] = [];
       clients.forEach(c => {
         if (['Mason', 'Doppelganger Mason'].includes(c.startingCharacter.name)) {
           allMasons.push(c);
