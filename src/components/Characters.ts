@@ -24,8 +24,7 @@ const characters: Character[] = [
     team: Team.UNKNOWN,
     order: 1,
     doppel: false,
-    directions: `Doppelganger, wake up and select another players card. You are now that role. If you viewed the 
-    Robber or Troublemaker, do that action now.`,
+    directions: `Doppelganger, click another player to select that card. You are now that role.`,
     color: '#9FC5E4',
   },
   {
@@ -106,7 +105,7 @@ const characters: Character[] = [
     team: Team.VILLAGER,
     order: 60,
     doppel: true,
-    directions: `You may exchange your card with another players card. Then, view that card.`,
+    directions: `Click on another player to exchange your card with that players card.`,
     color: '#949494',
   },
   {

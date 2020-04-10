@@ -44,8 +44,8 @@ export interface Store {
   client: WebSocket.w3cwebsocket;
   name: string;
   playerId: string;
-  extraInfo: ICharacterExtraData;
-  actionResult: ActionResponse;
+  extraInfo: ICharacterExtraData[];
+  actionResult: ActionResponse[];
   gameResults: any;
   dispatch: (obj: DispatchObject) => any;
 }
@@ -83,6 +83,7 @@ export interface ICharacterExtraData {
   allWerewolves?: Pick<MyWebSocket, 'name' | 'playerId'>[];
   allMasons?: Pick<MyWebSocket, 'name' | 'playerId'>[];
   insomniac?: Character;
+  directions?: string;
   conferenceEndTime?: number;
 }
 

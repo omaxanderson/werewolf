@@ -198,18 +198,16 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   await setupGame(m.config, ws.roomId, webSocketServer);
   const shuffled = shuffle(m.config.originalCharacters);
 
-  /*
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
-    const c = 'Mystic Wolf';
-    if (a.name === c || a.name === 'Werewolf' ) {
+    const c = 'Doppelganger';
+    if (a.name === c /* || a.name === 'Werewolf' */ ) {
       return 1;
     }
     return -1;
   });
   // shuffled.splice(0, 0, shuffled.pop());
   // TODO END DEBUGGING
- */
 
   const characterMap: { [key: string]: Character } = {};
   getClientsInRoom(webSocketServer, ws.roomId).forEach(client => {

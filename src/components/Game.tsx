@@ -228,126 +228,108 @@ class Game extends React.Component<Store, {
       });
     };
 
-    const {
-      allWerewolves,
-      allMasons,
-        insomniac,
-      } = extraInfo || {};
+    const extraInfoList = [];
+
+    extraInfo.forEach(i => {
+      if (i.directions) {
+        extraInfoList.push(<div>{i.directions}</div>);
+      }
       switch (startingCharacter.name) {
         case 'Doppelganger':
           onPlayerClick = singlePlayerClick;
-          if (isMyTurn) {
-            extraJsx = <div>Select another player to become that role.</div>;
-          }
           break;
         case 'Doppelganger Mystic Wolf':
         case 'Mystic Wolf':
           onPlayerClick = singlePlayerClick;
-          if (isMyTurn) {
-            extraJsx = <div>Click on another player to view that card.</div>;
-            break;
-          }
-          // intentional fallthrough here
+        // intentional fallthrough here
         case 'Werewolf':
         case 'Doppelganger Werewolf':
           onMiddleCardClick = singleMiddleClick;
-          if (!allWerewolves) {
+          const { allWerewolves: wwInfo } = i;
+          if (!wwInfo) {
             break;
           }
-          if (allWerewolves.length === 1) {
-            extraJsx = <div>You are a solo wolf! Click on a middle card to view it.</div>;
+          if (wwInfo.length === 1) {
+            extraInfoList.push(<div>You are a solo wolf! Click on a middle card to view it.</div>);
             // solo wolf, look at a middle card
           } else {
-            const otherWolves = allWerewolves.filter(client => client.playerId !== playerId);
+            const otherWolves = wwInfo.filter(client => client.playerId !== playerId);
             const plural = otherWolves.length > 1;
             const wolfStr = `Your other wol${
               plural
                 ? 'ves are'
                 : 'f is'
-              } ${otherWolves.map(client => client.name).join(' and ')}.`;
-            extraJsx = <div>{wolfStr}</div>
+            } ${otherWolves.map(client => client.name).join(' and ')}.`;
+            extraInfoList.push(<div>{wolfStr}</div>);
           }
           break;
         case 'Doppelganger Minion':
         case 'Minion':
-          if (!allWerewolves) {
+          const { allWerewolves: minionInfo } = i;
+          if (!minionInfo) {
             break;
           }
-          const one = allWerewolves.length === 1;
-          const str = `The ${one ? 'only' : ''} werewol${one ? 'f' : 'ves'} ${one ? 'is' : 'are'} ${allWerewolves.map(w => w.name).join(' and ')}.`;
-          if (allWerewolves.length > 0) {
-            extraJsx = <div>{str}</div>;
+          const one = minionInfo.length === 1;
+          const str = `The ${one ? 'only' : ''} werewol${one ? 'f' : 'ves'} ${one ? 'is' : 'are'} ${minionInfo.map(w => w.name).join(' and ')}.`;
+          if (minionInfo.length > 0) {
+            extraInfoList.push(<div>{str}</div>);
           } else {
-            extraJsx = <div>All the werewolves are in the middle.</div>
+            extraInfoList.push(<div>All the werewolves are in the middle.</div>);
           }
           break;
         case 'Mason':
         case 'Doppelganger Mason':
-          if (!allMasons) {
+          const { allMasons: masonInfo } = i;
+          if (!masonInfo) {
             break;
           }
-          if (allMasons.length === 1) {
-            extraJsx = <div>You are a solo mason!</div>
-            // solo wolf, look at a middle card
+          if (masonInfo.length === 1) {
+            extraInfoList.push(<div>You are a solo mason!</div>);
           } else {
-            const otherMason = allMasons.filter(client => client.playerId !== playerId);
+            const otherMason = masonInfo.filter(client => client.playerId !== playerId);
             const pluralMason = otherMason.length > 1;
             const masonStr = `Your other mason${pluralMason ? 's' : ''} ${pluralMason
               ? 'are'
               : 'is'
-            } ${otherMason.map(({name}) => name).join(' and ')}.`;
-            extraJsx = <div>{masonStr}</div>
+            } ${otherMason.map(({ name }) => name).join(' and ')}.`;
+            extraInfoList.push(<div>{masonStr}</div>);
           }
           break;
         case 'Robber':
         case 'Doppelganger Robber':
           onPlayerClick = singlePlayerClick;
-          if (isMyTurn) {
-            extraJsx = <div>Click on a player to rob their card.</div>;
-          }
           break;
         case 'Seer':
         case 'Doppelganger Seer':
           onPlayerClick = singlePlayerClick;
           onMiddleCardClick = multiMiddleClick;
-          if (isMyTurn) {
-            extraJsx = <div>Click on a player to see, or select two cards from the middle.</div>;
-          }
-        break;
+          break;
         case 'Apprentice Seer':
         case 'Doppelganger Apprentice Seer':
           onMiddleCardClick = singleMiddleClick;
-          if (isMyTurn) {
-            extraJsx = <div>Click on a card in the middle to view that card.</div>;
-          }
           break;
         case 'Troublemaker':
         case 'Doppelganger Troublemaker':
           onPlayerClick = multiPlayerClick;
-          if (isMyTurn) {
-            extraJsx = <div>Click on two players to swap them.</div>;
-          }
           break;
         case 'Drunk':
         case 'Doppelganger Drunk':
           onMiddleCardClick = singleMiddleClick;
-          if (isMyTurn) {
-            extraJsx = <div>Click on a card in the middle to take that card</div>;
-          }
           break;
         case 'Insomniac':
         case 'Doppelganger Insomniac':
+          const { insomniac } = i;
           if (!insomniac) {
             break;
           }
-          extraJsx = <div>You are {insomniac.name === 'Insomniac' ? 'still' : 'now'} the {insomniac.name}</div>;
+          extraInfoList.push(<div>You are {insomniac.name === 'Insomniac' ? 'still' : 'now'} the {insomniac.name}</div>);
           break;
         default:
-          // do nothing
+        // do nothing
       }
-    // }
+    });
 
-    let actionResultMessage = actionResult?.message || '';
+    const actionResultMessage = actionResult.map(r => <div>{r?.message || ''}</div>);
 
     const isDaylight = gameState.currentIdx === gameOptions.characters.length;
     if (isDaylight && !this.interval) {
@@ -371,7 +353,7 @@ class Game extends React.Component<Store, {
               <h3 className={style.Box__Header}>
                 Info
               </h3>
-              {extraJsx || <div>It's not your turn.</div>}
+              {extraInfoList.length > 0 ? extraInfoList : <div>It's not your turn.</div>}
             </div>
           </Column>
           <Column sm={6}>

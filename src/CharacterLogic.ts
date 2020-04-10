@@ -22,16 +22,15 @@ export const getCharacterTurnInfo = (
     Minion: ['Minion', 'Doppelganger Minion'],
   };
 
-  // todo write tests for this
   if (Object.keys(doppelgangerInfoTurns).includes(currentCharacter.name)) {
     // we know we're sending info to other people
     if (!doppelgangerInfoTurns[currentCharacter.name]?.includes(startingCharacter.name)) {
-      return {};
+      return { };
     }
   } else {
     // anyone who isn't the current turn's role gets nothing
     if (startingCharacter.name !== currentCharacter.name) {
-      return {};
+      return { };
     }
   }
   switch (currentCharacter.name) {
@@ -47,7 +46,6 @@ export const getCharacterTurnInfo = (
         }
       });
       return { allWerewolves };
-      break;
     case 'Doppelganger Mason':
     case 'Mason':
       const allMasons: { name: string; playerId: string; }[] = [];
@@ -81,6 +79,7 @@ export const getCharacterTurnInfo = (
       return { insomniac };
     default:
       // do nothing
+      return { directions: client.startingCharacter.directions };
   }
   return {};
 };

@@ -18,9 +18,9 @@ const initialState = {
   players: [],
   client: null,
   name: null,
-  extraInfo: null,
+  extraInfo: [],
   playerId: null,
-  actionResult: null,
+  actionResult: [],
   gameResults: null,
   dispatch: (obj: DispatchObject) => console.log('bad things happened'),
 };
@@ -32,10 +32,14 @@ export default (state: Store = initialState, action) => {
   } = action;
   switch (type) {
     case ReduxAction.UPDATE_GAME_STATE:
+      const e = [...state.extraInfo];
+      if (payload.extraInfo) {
+        e.push(payload.extraInfo);
+      }
       return {
         ...state,
         gameState: payload.gameState,
-        extraInfo: payload.extraInfo || state.extraInfo,
+        extraInfo: e,
       };
     case ReduxAction.SET_ROOM_ID:
       return {
@@ -75,10 +79,19 @@ export default (state: Store = initialState, action) => {
         gameState: payload.gameState,
       };
     case ReduxAction.SAVE_ACTION_RESULT:
+      const {
+        actionResult,
+        extraInfo,
+      } = state;
+      const newActionResult = [...actionResult, payload];
+      let newExtraInfo = [...extraInfo];
+      if (payload.info) {
+        newExtraInfo.push(payload.info);
+      }
       return {
         ...state,
-        actionResult: payload,
-        extraInfo: payload.info || state.extraInfo,
+        actionResult: newActionResult,
+        extraInfo: newExtraInfo,
       };
     case ReduxAction.GAME_END:
       return {
@@ -86,13 +99,14 @@ export default (state: Store = initialState, action) => {
         gameResults: payload.results,
       };
     case ReduxAction.GO_TO_SETUP:
+      // todo this might need to be fixed
       return {
         ...state,
         gameResults: null,
         gameState: null,
         gameOptions: null,
-        extraInfo: null,
-        actionResult: null,
+        extraInfo: [],
+        actionResult: [],
       };
     case ReduxAction.UPDATE_STARTING_CHARACTER:
       // need to be careful with this...

@@ -49,7 +49,7 @@ class Voting extends React.Component<Store, {
     } = this.state;
     const isDaylight = gameState.currentIdx === gameOptions.characters.length;
     if (isDaylight) {
-      const conferenceEnd = extraInfo?.conferenceEndTime;
+      const conferenceEnd = extraInfo.find(e=> e.conferenceEndTime)?.conferenceEndTime;
       if (conferenceEnd) {
         // if after end, send vote
         if (playerSelected
