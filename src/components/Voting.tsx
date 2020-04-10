@@ -80,7 +80,7 @@ class Voting extends React.Component<Store, {
 
         return (
           <>
-            <h3>{minutes}:{seconds} remaining</h3>
+            <h3>Cast your votes! {minutes}:{seconds} remaining</h3>
             <Players
               players={players}
               playersSelected={playerSelected
