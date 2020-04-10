@@ -19,7 +19,9 @@ import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
 import { canTakeAction, getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
 
-export interface MyWebSocket extends WebSocket {
+export type MyWebSocket = CustomWebSocket & WebSocket;
+
+export interface CustomWebSocket {
   roomId: string;
   gameId: string;
   playerId: string;
@@ -138,8 +140,9 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
     },
   })));
 
-  const game = games.find(g => g.gameId === gameId);
-  clearTimeout(game.resultsTimer);
+  const gameIndex = games.findIndex(g => g.gameId === gameId);
+  clearTimeout(games[gameIndex].resultsTimer);
+  games.splice(gameIndex, 1);
 };
 
 const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: string) => {
@@ -309,6 +312,17 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
       () => nextCharacterTurn(webSocketServer, ws.roomId, m.config.gameId),
       START_BUFFER,
     ),
+    players: getClientsInRoom(webSocketServer, ws.roomId), /*.map(c => ({
+      roomId: c.roomId,
+      gameId: c.gameId,
+      playerId: c.playerId,
+      name: c.name,
+      color: c.color,
+      character: c.character,
+      startingCharacter: c.startingCharacter,
+      actionTaken: c.actionTaken,
+      vote: c.vote,
+    })) */
   };
 
   games.push(game);
@@ -319,19 +333,93 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
  */
 export default (server) => {
   const webSocketServer = new WebSocket.Server({server});
-  webSocketServer.on('connection', (webSocket: WebSocket, req: http.IncomingMessage) => {
+  webSocketServer.on('connection', async (webSocket: WebSocket, req: http.IncomingMessage) => {
     // Have to manually re-type this
     const ws = webSocket as MyWebSocket;
-    const {query: {id, name, playerId}} = parseUrl(req);
+    const { query: { id, name, playerId, gameId: rejoinGameId } } = parseUrl(req);
     if (!Array.isArray(id)) {
       ws.roomId = id;
     }
     if (!Array.isArray(name)) {
       ws.name = decodeURI(name);
     }
-    if (!Array.isArray(playerId) && typeof playerId !== 'undefined') {
+    const setClientDefaults = () => {
+      console.log('not setting their shit');
+      // set unique id for client
+      ws.playerId = v4();
+
+      ws.actionTaken = [];
+
+      // set color
+      ws.color = `#${[
+        randomInt(255).toString(16).padStart(2, '0'),
+        randomInt(255).toString(16).padStart(2, '0'),
+        randomInt(255).toString(16).padStart(2, '0'),
+      ].join('')}`;
+    };
+    if (!Array.isArray(playerId) && typeof playerId !== 'undefined'
+      && !Array.isArray(rejoinGameId) && typeof rejoinGameId !== 'undefined') {
       // load info from redis and add them back into the game?
+      // find their game
+      const game = games.find(g => g.gameId === rejoinGameId);
+      const player = game?.players?.find(p => p.playerId === playerId);
+      if (player) {
+        console.log('setting their shit');
+        // attach the right shit for them
+        ws.playerId = playerId;
+        ws.gameId = rejoinGameId;
+        ws.name = player.name;
+        ws.color = player.color;
+        ws.character = player.character;
+        ws.startingCharacter = player.startingCharacter;
+        ws.actionTaken = player.actionTaken;
+        ws.vote = player.vote;
+
+        // we then need to send game state, game options, ideally info and results but not likely
+        try {
+          const gameState = JSON.parse(await Redis.get(`game-${rejoinGameId}`));
+          const gameOptions = JSON.parse(await Redis.get(`config-${rejoinGameId}`));
+          ws.send(JSON.stringify({
+            action: WebSocketAction.UPDATE_GAME_CONFIG,
+            gameOptions: {
+              ...gameOptions,
+              character: player.character,
+              startingCharacter: player.startingCharacter,
+            },
+          }));
+          const message: {
+            action: WebSocketAction;
+            gameState: GameState;
+            extraInfo?: ICharacterExtraData;
+          } = {
+            action: WebSocketAction.NEXT_CHARACTER,
+            gameState,
+          };
+          //if (currentCharacter.name === client.startingCharacter.name) {
+          // get special config
+          message.extraInfo = getCharacterTurnInfo(
+            gameOptions.characters[gameState.currentIdx],
+            getClientsInRoom(webSocketServer, id as string),
+            ws,
+          );
+          if (game.endTimeInMs) {
+            // get conference end time
+            message.extraInfo = {
+              conferenceEndTime: game.endTimeInMs,
+            }
+          }
+          console.log('e4');
+          ws.send(JSON.stringify(message));
+        } catch (e) {
+          console.log('error sending info', e.message);
+        }
+      } else {
+        setClientDefaults();
+      }
+    } else {
+      setClientDefaults();
     }
+
     ws.on('message', async (json: string) => {
       try {
         const m: WebSocketMessage = JSON.parse(json);
@@ -358,6 +446,7 @@ export default (server) => {
             });
             break;
           case WebSocketAction.START_GAME:
+            console.log('starting game ');
             await onStartGame(webSocketServer, ws, m);
             break;
           case WebSocketAction.DEBUG__NEXT_CHARACTER:
@@ -504,19 +593,6 @@ export default (server) => {
         players: simplified,
       })));
     });
-
-    // set unique id for client
-    ws.playerId = v4();
-
-    ws.actionTaken = [];
-
-    // set color
-    ws.color = `#${[
-      randomInt(255).toString(16).padStart(2, '0'),
-      randomInt(255).toString(16).padStart(2, '0'),
-      randomInt(255).toString(16).padStart(2, '0'),
-    ].join('')}`;
-
     // notify room members of a new join
     const clientsInRoom = getClientsInRoom(webSocketServer, ws.roomId);
     const simplifiedClients = clientsInRoom.map((client: MyWebSocket) => ({

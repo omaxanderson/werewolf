@@ -1,6 +1,6 @@
 import { Character } from './Characters';
 import * as WebSocket from 'websocket';
-import { MyWebSocket } from '../Websocket';
+import { CustomWebSocket, MyWebSocket } from '../Websocket';
 import Timeout = NodeJS.Timeout;
 
 export function isCharacter(c: Character | any): c is Character {
@@ -109,4 +109,5 @@ export interface IGame {
   startTimeInMs?: number;
   endTimeInMs?: number;
   timeRemainingInMs?: number;
+  players: MyWebSocket[];
 }

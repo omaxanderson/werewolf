@@ -79,6 +79,11 @@ export default (state: Store = initialState, action) => {
         name: payload,
       };
     case ReduxAction.GAME_IS_STARTING:
+      // save my gameid and playerid
+      if (typeof Storage !== 'undefined') {
+        localStorage.setItem('gameId', payload.gameOptions.gameId);
+        localStorage.setItem('playerId', state.playerId);
+      }
       return {
         ...state,
         gameOptions: payload.gameOptions,

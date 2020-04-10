@@ -1,11 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import {
-  Modal,
-} from '@omaxwellanderson/react-components';
 import { IPlayer, Store } from './Interfaces';
-import style from './Game.scss';
-import Ribbon from './Ribbon';
 import Players from './Players';
 import { WebSocketAction } from '../IWebsocket';
 

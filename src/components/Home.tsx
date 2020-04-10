@@ -79,8 +79,19 @@ export class Home extends React.Component<Store, {
       name,
       roomId,
     } = this.props;
+    let gameId;
+    let playerId;
+    if (typeof Storage !== 'undefined') {
+      gameId = localStorage.getItem('gameId');
+      playerId = localStorage.getItem('playerId');
+    }
     const { host } = window.location;
-    const client = new WebSocketClient(`ws://${host}?id=${roomId}&name=${name}`, 'echo-protocol');
+    const url = `ws://${host}?id=${roomId}&name=${name}${gameId
+      ? `&gameId=${gameId}`
+      : ''
+    }${playerId
+      ? `&playerId=${playerId}` : '' }`;
+    const client = new WebSocketClient(url, 'echo-protocol');
     client.onerror = (e) => console.error(e);
     client.onopen = () => console.log('connected to websocket');
     client.onclose = () => console.log('closed');
