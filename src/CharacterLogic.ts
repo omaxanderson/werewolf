@@ -50,7 +50,7 @@ export const getCharacterTurnInfo = (
       const allMasons: { name: string; playerId: string; }[] = [];
       clients.forEach(c => {
         if (['Mason', 'Doppelganger Mason'].includes(c.startingCharacter.name)) {
-          allMasons.push(c);
+          allMasons.push({ name: c.name, playerId: c.playerId });
         }
       });
       return { allMasons };
