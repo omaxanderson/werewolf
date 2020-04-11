@@ -17,7 +17,7 @@ const initialState = {
   },
   gameOptions: {
     ...defaultGameOptions,
-    secondsToConference: 10,
+    secondsToConference: 300,
     secondsPerCharacter: 7,
   },
   roomId: null,

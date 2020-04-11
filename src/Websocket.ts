@@ -19,6 +19,9 @@ import { WebSocketAction, WebSocketMessage, } from './IWebsocket';
 import randomInt from './util/randomInt';
 import { canTakeAction, getCharacterTurnInfo, handleCharacterActions } from './CharacterLogic';
 
+const DOPPELGANGER_EXTRA = 5;
+const START_BUFFER = 5 * 1000;
+
 export type MyWebSocket = CustomWebSocket & WebSocket;
 
 export interface CustomWebSocket {
@@ -95,8 +98,6 @@ const getClientsInRoom = (wss: WebSocket.Server, roomId: string) => {
   });
   return clients;
 };
-
-const START_BUFFER = 5 * 1000;
 
 const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
   const results: {
@@ -182,7 +183,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
     game.endTimeInMs = Date.now() + (config.secondsToConference * 1000);
   } else {
     const t = (config.secondsPerCharacter
-      + (currentCharacter.name === 'Doppelganger' ? 10 : 0)) * 1000;
+      + (currentCharacter.name === 'Doppelganger' ? DOPPELGANGER_EXTRA : 0)) * 1000;
     game.nextCharacterTimer = setTimeout(
       () => nextCharacterTurn(wss, roomId, gameId),
       t,
@@ -266,6 +267,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   const shuffled = shuffle(m.config.originalCharacters);
 
   // TODO DEBUGGING ONLY
+  /*
   shuffled.sort((a, b) => {
     const c = 'Doppelganger';
     if (a.name === c || a.name === 'Mason') {
@@ -275,6 +277,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   });
   // shuffled.splice(0, 0, shuffled.pop());
   // TODO END DEBUGGING
+   */
 
   const characterMap: { [key: string]: Character } = {};
   getClientsInRoom(webSocketServer, ws.roomId).forEach(client => {

@@ -16,7 +16,7 @@ class Setup extends React.Component<Store & { onGameStart }, {
 
     this.state = {
       timePerCharacter: props.gameOptions.secondsPerCharacter,
-      timeToConference: props.gameOptions.secondsToConference,
+      timeToConference: this.secondsToTime(props.gameOptions.secondsToConference),
       validTTC: true,
     };
   }
@@ -73,13 +73,14 @@ class Setup extends React.Component<Store & { onGameStart }, {
 
   validateTimeToConference = () => {
     let valid = true;
-    if (!/^[\d]{1,2}:[\d]{2}$/.test(this.state.timeToConference)) {
-      valid = false;
-      // return this.setState({ validTTC: true });
+    if (
+      !/^[\d]{1,2}:[\d]{2}$/.test(this.state.timeToConference)
       // @ts-ignore
-    } else if (isNaN(this.state.timeToConference)) {
+      && isNaN(this.state.timeToConference)
+    ) {
       valid = false;
     }
+    console.log('valid', valid);
     this.setState({ validTTC: valid });
   };
 
