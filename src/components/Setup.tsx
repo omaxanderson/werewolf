@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import C, { Character, Team } from './Characters';
+import C, { Team } from './Characters';
 import { ReduxAction, Store } from './Interfaces';
 import { Button, Checkbox, Column, Header, Row, TextInput, } from '@omaxwellanderson/react-components';
 import Players from './Players';
@@ -9,10 +9,16 @@ import { WebSocketAction } from '../IWebsocket';
 class Setup extends React.Component<Store & { onGameStart }, {
   timePerCharacter: string;
   timeToConference: string;
-  characters: Character[];
+  validTTC: boolean;
 }> {
   constructor(props) {
     super(props);
+
+    this.state = {
+      timePerCharacter: props.gameOptions.secondsPerCharacter,
+      timeToConference: props.gameOptions.secondsToConference,
+      validTTC: true,
+    };
   }
 
   changeTimePerCharacter = (e, value) => {
@@ -28,10 +34,7 @@ class Setup extends React.Component<Store & { onGameStart }, {
       type: ReduxAction.UPDATE_GAME_OPTIONS,
       payload: newGameOptions,
     });
-    this.props.client.send(JSON.stringify({
-      action: WebSocketAction.UPDATE_GAME_CONFIG,
-      config: newGameOptions,
-    }))
+    this.setState({ timePerCharacter: value });
   };
 
   changeTimeToConference = (e, value) => {
@@ -47,10 +50,7 @@ class Setup extends React.Component<Store & { onGameStart }, {
       type: ReduxAction.UPDATE_GAME_OPTIONS,
       payload: newGameOptions,
     });
-    this.props.client.send(JSON.stringify({
-      action: WebSocketAction.UPDATE_GAME_CONFIG,
-      config: newGameOptions,
-    }));
+    this.setState({ timeToConference: value });
   };
 
   parseTime = (time: string): number => {
@@ -71,6 +71,18 @@ class Setup extends React.Component<Store & { onGameStart }, {
     return `${minutes}:${leftoverSeconds.toString().padStart(2, '0')}`;
   };
 
+  validateTimeToConference = () => {
+    let valid = true;
+    if (!/^[\d]{1,2}:[\d]{2}$/.test(this.state.timeToConference)) {
+      valid = false;
+      // return this.setState({ validTTC: true });
+      // @ts-ignore
+    } else if (isNaN(this.state.timeToConference)) {
+      valid = false;
+    }
+    this.setState({ validTTC: valid });
+  };
+
   validate = (): string | boolean => {
     const {
       characters,
@@ -84,15 +96,6 @@ class Setup extends React.Component<Store & { onGameStart }, {
     if (!characters.some(c => c.team === Team.VILLAGER)) {
       return 'No Villagers';
     }
-    /*
-    if (!this.parseTime(this.props.gameOptions.secondsToConference)) {
-      return 'Invalid time to conference';
-    }
-
-    if (!this.parseTime(this.state.timePerCharacter)) {
-      return 'Invalid time per character';
-    }
-     */
     return false;
   };
 
@@ -154,8 +157,6 @@ class Setup extends React.Component<Store & { onGameStart }, {
       players,
       gameOptions: {
         characters,
-        secondsPerCharacter,
-        secondsToConference,
       },
     } = this.props;
     const [ werewolfTeam, selfTeam, villagerTeam ] = [
@@ -184,15 +185,17 @@ class Setup extends React.Component<Store & { onGameStart }, {
             <TextInput
               label="Seconds per Character"
               onChange={this.changeTimePerCharacter}
-              value={secondsPerCharacter}
+              value={this.state.timePerCharacter}
             />
           </Column>
           <Column md={6} sm={12}>
             <TextInput
               label="Time to Conference"
               onChange={this.changeTimeToConference}
-              value={this.secondsToTime(secondsToConference)}
+              onBlur={this.validateTimeToConference}
+              value={this.state.timeToConference}
             />
+            {!this.state.validTTC && <div style={{color: 'red'}}>Invalid time.</div>}
           </Column>
         </Row>
         <Row>
@@ -255,7 +258,7 @@ class Setup extends React.Component<Store & { onGameStart }, {
         <div>
           <Button
             onClick={this.startGame}
-            disabled={!this.hasRightNumberPlayers()}
+            disabled={!this.hasRightNumberPlayers() || !this.state.validTTC}
             type="primary"
           >
             Start Game

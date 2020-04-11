@@ -334,6 +334,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
 export default (server) => {
   const webSocketServer = new WebSocket.Server({server});
   webSocketServer.on('connection', async (webSocket: WebSocket, req: http.IncomingMessage) => {
+    console.log('# games', games.length);
     // Have to manually re-type this
     const ws = webSocket as MyWebSocket;
     const { query: { id, name, playerId, gameId: rejoinGameId } } = parseUrl(req);
