@@ -10,7 +10,7 @@ export interface Character {
 }
 
 export enum Team {
-  WEREWOLF,
+  WEREWOLF = 1,
   WEREWOLF_ALLY,
   VILLAGER,
   SELF,

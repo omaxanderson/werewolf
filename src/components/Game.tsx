@@ -2,6 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import isEqual from 'lodash/isEqual';
 import classNames from 'classnames';
+import get from 'lodash/get';
 import { Character, Team } from "./Characters";
 import { IPlayer, LogItem } from './Interfaces';
 import { Store } from './Interfaces';
@@ -17,6 +18,49 @@ import {
 import Players from './Players';
 import Voting from './Voting';
 import { v4 } from 'uuid';
+
+function getGameWinner(
+  characterResults: { [name: string]: Character },
+  killed: { name: string, character: Character }[]
+): Team[] {
+  const winningTeams = [];
+
+  const tannerDied = killed.some(dead => dead.character.team === Team.SELF);
+  const wwDied = killed.some(dead => dead.character.team === Team.WEREWOLF);
+  const minionDied = killed.some(dead => dead.character.team === Team.WEREWOLF_ALLY);
+  const villagerDied = killed.some(dead => dead.character.team === Team.VILLAGER);
+  const wwExists = Object.values(characterResults).some(c => c.team === Team.WEREWOLF);
+  const minionExists = Object.values(characterResults).some(c => c.team === Team.WEREWOLF_ALLY);
+
+  if (tannerDied) {
+    winningTeams.push(Team.SELF);
+  }
+
+  if (
+    wwDied // at least one werewolf dies
+    || (
+      !wwExists // no werewolf in play
+      && !villagerDied
+      && !tannerDied
+    )) {
+    winningTeams.push(Team.VILLAGER);
+  } else if (
+    wwExists // one character is a WW
+    && !wwDied // ww didn't die
+    && !tannerDied // and the tanner didn't win
+  ) {
+    winningTeams.push(Team.WEREWOLF);
+  } else if (
+    !wwExists // no ww's
+    && minionExists
+    && !minionDied
+    && villagerDied
+    && !tannerDied
+  ) {
+    winningTeams.push(Team.WEREWOLF_ALLY);
+  }
+  return winningTeams;
+}
 
 class Game extends React.Component<Store, {
   middleCardsSelected: number[];
@@ -87,6 +131,24 @@ class Game extends React.Component<Store, {
     const voteArr: [string, number][] = Object.entries(votes).map(entry => entry);
     voteArr.sort(([_, a], [__, b]) => b - a);
 
+    const maxVotes = get(voteArr, '0.1', 0);
+    const killed = voteArr
+      .filter(([_, votes]) => votes > 1)
+      .filter(([name, _]) => name !== 'Middle')
+      .filter(([_, votes]) => votes === maxVotes).map(([name]) => ({
+      name,
+      character: characterResults[name],
+    }));
+
+    const werewolves = Object.entries(characterResults).filter(([_, character]) => (
+      [Team.WEREWOLF, Team.WEREWOLF_ALLY].includes(character.team)
+    ));
+    const villagers = Object.entries(characterResults).filter(([_, character]) => (
+      ![Team.WEREWOLF, Team.WEREWOLF_ALLY].includes(character.team)
+    ));
+
+    const winningTeams = getGameWinner(characterResults, killed);
+
     const readableLog = log?.map((logItem: LogItem) => {
       let str = `${logItem.player} as the ${logItem.as}: `;
       if (logItem.middleCardsSelected?.length > 0) {
@@ -100,14 +162,53 @@ class Game extends React.Component<Store, {
     }) || [];
     return (
       <>
+        <div>
+          <h2>
+            {winningTeams.includes(Team.VILLAGER) && 'Villagers Win!'}
+          </h2>
+          <h2>
+            {winningTeams.includes(Team.SELF) && 'Tanner Wins!'}
+          </h2>
+          <h2>
+            {winningTeams.includes(Team.WEREWOLF) && 'Werewolves Win!'}
+          </h2>
+          <h2>
+            {winningTeams.includes(Team.WEREWOLF_ALLY) && 'Minion Wins!'}
+          </h2>
+          <h2>
+            {winningTeams.length === 0 && 'Nobody Wins!'}
+          </h2>
+        </div>
         <Row>
           <Column sm={12} md={4}>
-            <Header h={3}>Players</Header>
-            {Object.entries(characterResults).map(([name, character]) => (
-              <div key={`result_${name}`}>
-                {name}: <strong>{(character as Character).name}</strong>
-              </div>
-            ))}
+            <div>
+              <Header h={3}>Werewolves</Header>
+              {werewolves.map(([name, character]) => {
+                // first name in voteArr
+                const className = killed.map(dead => dead.name).includes(name)
+                  ? style.Killed
+                  : '';
+                return (
+                  <div key={`result_${name}`} className={className}>
+                    {name}: <strong>{(character as Character).name}</strong>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: '20px' }}>
+              <Header h={3}>Villagers</Header>
+              {villagers.map(([name, character]) => {
+                // first name in voteArr
+                const className = killed.map(dead => dead.name).includes(name)
+                  ? style.Killed
+                  : '';
+                return (
+                  <div key={`result_${name}`} className={className}>
+                    {name}: <strong>{(character as Character).name}</strong>
+                  </div>
+                );
+              })}
+            </div>
           </Column>
           <Column sm={12} md={4}>
             <Header h={3}>Middle Cards</Header>
@@ -148,7 +249,11 @@ class Game extends React.Component<Store, {
       actionResult,
       gameResults,
     } = this.props;
+    console.log('hi');
     if (gameResults) {
+      if (this.interval) {
+        clearInterval(this.interval);
+      }
       return this.getGameResults();
     }
     const { startingCharacter } = gameOptions;

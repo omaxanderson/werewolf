@@ -47,7 +47,7 @@ const pauseGame = (gameId: string) => {
   if (game.resultsTimer) {
     clearTimeout(game.resultsTimer);
     game.timeRemainingInMs = game.endTimeInMs - Date.now();
-    console.log('time rem', game.timeRemainingInMs);
+    // console.log('time rem', game.timeRemainingInMs);
   }
   if (game.nextCharacterTimer) {
     clearTimeout(game.nextCharacterTimer);
@@ -85,7 +85,7 @@ const resumeGame = async (wss: WebSocket.Server, roomId: string, gameId: string)
       );
     }
   } catch (e) {
-    console.log('error resuming game', e.message);
+    // console.log('error resuming game', e.message);
   }
 };
 
@@ -110,7 +110,7 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
     results[client.name] = client.character;
 
     // set votes
-    console.log('v', client.vote);
+    // console.log('v', client.vote);
     if (client.vote) {
 	    if (votes[client.vote]) {
 	      votes[client.vote] = votes[client.vote] + 1;
@@ -123,14 +123,14 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
       gameId = client.gameId;
     }
   });
-  console.log(1, `characters-${gameId}`);
-  console.log(2, await Redis.get(`characters-${gameId}`));
+  // console.log(1, `characters-${gameId}`);
+  // console.log(2, await Redis.get(`characters-${gameId}`));
   const { middleCards } = JSON.parse(await Redis.get(`characters-${gameId}`));
   // results.middleCards = middleCards;
 
   const log: LogItem[] = JSON.parse(await Redis.get(`log-${gameId}`));
 
-  console.log('e1');
+  // console.log('e1');
   clients.forEach(client => client.send(JSON.stringify({
     action: WebSocketAction.GAME_END,
     results: {
@@ -157,7 +157,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
   if (fromCharacter === config.characters[state.currentIdx]?.name) {
     state.currentIdx += 1;
   }
-  console.log('e3');
+  // console.log('e3');
   await Redis.set(`game-${gameId}`, JSON.stringify(state));
 
   const isDaylight = state.currentIdx >= config.characters.length;
@@ -211,7 +211,7 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
         conferenceEndTime: endTime,
       }
     }
-    console.log('e4');
+    // console.log('e4');
     client.send(JSON.stringify(message));
   });
 };
@@ -251,9 +251,9 @@ const setupGame = async (config: GameOptions, roomId: string, wss: WebSocket.Ser
 
   // store game config and state
   try {
-    console.log('e5');
+    // console.log('e5');
     await Redis.set(`config-${gameId}`, JSON.stringify(config));
-    console.log('e6');
+    // console.log('e6');
     await Redis.set(`game-${gameId}`, JSON.stringify({
       currentIdx: -1,
     } as GameState));
@@ -285,7 +285,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
     client.startingCharacter = character;
     client.character = character;
     characterMap[client.playerId] = character;
-    console.log('e8');
+    // console.log('e8');
     client.send(JSON.stringify({
       action: WebSocketAction.START_GAME,
       gameOptions: {
@@ -299,7 +299,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
     }));
   });
   try {
-    console.log('e9');
+    // console.log('e9');
     await Redis.set(`characters-${m.config.gameId}`, JSON.stringify({
       characterMap,
       middleCards: shuffled,
@@ -368,7 +368,7 @@ export default (server) => {
       const game = games.find(g => g.gameId === rejoinGameId);
       const player = game?.players?.find(p => p.playerId === playerId);
       if (player) {
-        console.log('setting their shit');
+        // console.log('setting their shit');
         // attach the right shit for them
         ws.playerId = playerId;
         ws.gameId = rejoinGameId;
@@ -412,10 +412,10 @@ export default (server) => {
               conferenceEndTime: game.endTimeInMs,
             }
           }
-          console.log('e4');
+          // console.log('e4');
           ws.send(JSON.stringify(message));
         } catch (e) {
-          console.log('error sending info', e.message);
+          // console.log('error sending info', e.message);
         }
       } else {
         setClientDefaults();
@@ -450,7 +450,7 @@ export default (server) => {
             });
             break;
           case WebSocketAction.START_GAME:
-            console.log('starting game ');
+            // console.log('starting game ');
             await onStartGame(webSocketServer, ws, m);
             break;
           case WebSocketAction.DEBUG__NEXT_CHARACTER:
@@ -473,19 +473,22 @@ export default (server) => {
             break;
           case WebSocketAction.CAST_VOTE:
             const { vote: { playerId } } = m;
-            // find player name
-            // save it in an object on the client?
-            ws.vote = playerId;
-            console.log('pid', playerId);
-            const clientsForVote = getClientsInRoom(webSocketServer, ws.roomId);
-            clientsForVote.forEach(c => {
-              if (c.playerId === playerId) {
-                console.log('setting vote', c.playerId);
-                ws.vote = c.name;
-              }
-            });
+            // allow clearing votes
+            if (!playerId) {
+              ws.vote = 'Middle';
+            } else {
+              // find player name
+              // save it in an object on the client?
+              ws.vote = playerId;
+              getClientsInRoom(webSocketServer, ws.roomId).forEach(c => {
+                if (c.playerId === playerId) {
+                  // console.log('setting vote', c.playerId);
+                  ws.vote = c.name;
+                }
+              });
+            }
             // then check all clients and if they all have a vote for this game id
-            if (clientsForVote.every(c => c.vote)) {
+            if (getClientsInRoom(webSocketServer, ws.roomId).every(c => c.vote)) {
               // send results to everyone
               await sendFinalCharacters(webSocketServer, ws.roomId);
             }
@@ -501,7 +504,7 @@ export default (server) => {
               ws,
               ws.gameId,
             )) {
-              console.log('no action for you');
+              // console.log('no action for you');
               break;
             } else {
               // set current turn
@@ -526,7 +529,7 @@ export default (server) => {
               middleCards[
                 (m as unknown as { params: CharacterActionParams }).params.middleCardsSelected[0]
                 ] = ws.startingCharacter;
-              console.log('e10');
+              // console.log('e10');
               await Redis.set(`characters-${ws.gameId}`, JSON.stringify({
                 ...redisData,
                 middleCards,
@@ -535,7 +538,7 @@ export default (server) => {
 
             if (originalStartingCharacterName === 'Doppelganger') {
               // this should only happen the first time the doppelganger takes an action
-              console.log('e11');
+              // console.log('e11');
               ws.send(JSON.stringify({
                 action: WebSocketAction.UPDATE_CLIENT_STARTING_CHARACTER,
                 gameOptions: {
@@ -544,7 +547,7 @@ export default (server) => {
               }));
             }
 
-            console.log('e12');
+            // console.log('e12');
             ws.send(JSON.stringify({
               action: WebSocketAction.ACTION_RESULT,
               ...actionResult,
@@ -563,7 +566,7 @@ export default (server) => {
               client.vote = null;
             });
             clientsToClear.forEach(client => {
-              console.log('e13');
+              // console.log('e13');
               client.send(JSON.stringify({
                 action: WebSocketAction.GO_TO_SETUP,
               }));
@@ -571,14 +574,14 @@ export default (server) => {
 
             break;
           default:
-            console.log('e14');
+            // console.log('e14');
             ws.send(JSON.stringify({
               message: `hello you sent: ${m.message}`,
               messageId: m.messageId,
             }));
         }
       } catch (e) {
-        console.log('error in websocket message', e);
+        // console.log('error in websocket message', e);
       }
     });
 
@@ -591,7 +594,7 @@ export default (server) => {
             color: client.color,
             playerId: client.playerId,
         }));
-      console.log('e15');
+      // console.log('e15');
       filteredClients.forEach(client => client.send(JSON.stringify({
         action: WebSocketAction.LIST_PLAYERS,
         players: simplified,
@@ -604,17 +607,17 @@ export default (server) => {
       color: client.color,
       playerId: client.playerId,
     }));
-    console.log('e16');
+    // console.log('e16');
     clientsInRoom.forEach(client => client.send(JSON.stringify({
       action: WebSocketAction.PLAYER_JOINED,
       players: simplifiedClients,
     })));
-    console.log('e17');
+    // console.log('e17');
     ws.send(JSON.stringify({
       action: WebSocketAction.LIST_PLAYERS,
       players: simplifiedClients,
     }));
-    console.log('e18');
+    // console.log('e18');
     ws.send(JSON.stringify({
       action: WebSocketAction.SEND_PLAYER_ID,
       playerId: ws.playerId,
@@ -631,7 +634,7 @@ function sendPlayerList(wss: WebSocket.Server, ws: MyWebSocket) {
     playerId: client.playerId,
   }));
   clientsInRoom.forEach(client => {
-    console.log('e19');
+    // console.log('e19');
     client.send(JSON.stringify({
       action: WebSocketAction.LIST_PLAYERS,
       players: simplifiedClients,

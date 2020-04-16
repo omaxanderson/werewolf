@@ -3,6 +3,9 @@ import { connect } from 'react-redux';
 import { IPlayer, Store } from './Interfaces';
 import Players from './Players';
 import { WebSocketAction } from '../IWebsocket';
+import {
+  Button,
+} from '@omaxwellanderson/react-components';
 
 class Voting extends React.Component<Store, {
   playerSelected: IPlayer;
@@ -64,8 +67,9 @@ class Voting extends React.Component<Store, {
       const conferenceEnd = extraInfo.find(e => e.conferenceEndTime)?.conferenceEndTime;
       if (conferenceEnd) {
         // if after end, send vote
+        // this is gross, should be in onPlayerClick, whatever
         if (playerSelected
-          && (!hasCastVote || (hasCastVote.name !== playerSelected.name))
+          && (!hasCastVote || (hasCastVote.name !== playerSelected?.name))
         ) {
           this.setState({ hasCastVote: this.state.playerSelected }, () => {
             client.send(JSON.stringify({
@@ -82,7 +86,7 @@ class Voting extends React.Component<Store, {
           <>
             <h3>Cast your votes! {minutes}:{seconds} remaining</h3>
             <Players
-              players={players}
+              players={[...players, { name: 'Middle', playerId: '' }]}
               playersSelected={playerSelected
                 ? [playerSelected]
                 : []}
