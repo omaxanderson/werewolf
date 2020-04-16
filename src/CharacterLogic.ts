@@ -167,7 +167,7 @@ export const handleCharacterActions = async (
     case 'Mystic Wolf':
       if (playersSelected?.length) {
         response.result = [findSelectedPlayerCharacter(clients, first)];
-        response.message = `You have viewed the ${response.result[0].name}.`;
+        response.message = `You looked at ${first.name} and saw the ${response.result[0].name}.`;
         return response;
       } else if (middleCardsSelected?.length) {
         response.result = [middleCards[firstMiddle]];
@@ -184,7 +184,7 @@ export const handleCharacterActions = async (
     case 'Seer':
       if (playersSelected?.length) {
         response.result = [findSelectedPlayerCharacter(clients, first)];
-        response.message = `You saw the ${response.result[0].name}.`;
+        response.message = `You looked at ${first.name} and saw the ${response.result[0].name}.`;
         return response;
       }
       response.result = [middleCards[firstMiddle], middleCards[secondMiddle]];
@@ -208,7 +208,7 @@ export const handleCharacterActions = async (
         }
       });
       response.result = [newCharacter];
-      response.message = `You are now the ${newCharacter.name}.`;
+      response.message = `You robbed ${first.name} and are now the ${newCharacter.name}.`;
       return response;
     case 'Doppelganger Troublemaker':
     case 'Troublemaker':
@@ -227,7 +227,7 @@ export const handleCharacterActions = async (
       const tempCharacter = clientA.character;
       clientA.character = clientB.character;
       clientB.character = tempCharacter;
-      response.message = 'Success!';
+      response.message = `Success! You swapped ${first.name} and ${second.name}.`;
       return response;
     case 'Doppelganger Drunk':
     case 'Drunk':
