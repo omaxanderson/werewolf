@@ -1,5 +1,7 @@
 import WebSocket from "ws";
 import * as http from "http";
+import moment from 'moment';
+import get from 'lodash/get';
 import flatten from 'lodash/flatten';
 import shuffle from 'lodash/shuffle';
 import { v4 } from 'uuid';
@@ -8,10 +10,10 @@ import parseUrl from "./util/parseUrl";
 import {
   CharacterActionParams,
   GameOptions,
-  GameState,
+  GameState, IAllTimeResults,
   ICharacterExtraData,
-  IGame,
-  LogItem
+  IGame, IGameResults, IKilled,
+  LogItem, PlayerGameStat
 } from './components/Interfaces';
 import { Character, Team } from './components/Characters';
 import shortId from './util/shortId';
@@ -38,6 +40,199 @@ export interface CustomWebSocket {
 
 // i feel like this is not the way to do this but whatever
 const games: IGame[] = [];
+
+const storeStats = async (results: IGameResults): Promise<void> => {
+  try {
+    // get existing stats
+    const allTimeStats: IAllTimeResults = JSON.parse(await Redis.get('all-time-stats')) || {};
+    // update character games won
+    const { gamesWon, gamesPlayed } = allTimeStats;
+    if (gamesWon) {
+      if (results.winningTeams.includes(Team.WEREWOLF)) {
+        gamesWon.werewolves += 1;
+      }
+      if (results.winningTeams.includes(Team.SELF)) {
+        gamesWon.tanner += 1;
+      }
+      if (results.winningTeams.includes(Team.VILLAGER)) {
+        gamesWon.villagers += 1;
+      }
+    } else {
+      allTimeStats.gamesWon = {
+        werewolves: results.winningTeams.includes(Team.WEREWOLF) ? 1 : 0,
+        villagers: results.winningTeams.includes(Team.VILLAGER) ? 1 : 0,
+        tanner: results.winningTeams.includes(Team.SELF) ? 1 : 0,
+      }
+    }
+    const hasWolves = results.players
+      .some(p => [Team.WEREWOLF, Team.WEREWOLF_ALLY].includes(p.character.team)) ? 1 : 0;
+    const hasVillagers = results.players
+      .some(p => p.character.team === Team.VILLAGER) ? 1 : 0;
+    const hasTanner = results.players.some(p => p.character.name === 'Tanner') ? 1 : 0;
+
+      if (gamesPlayed) {
+      gamesPlayed.werewolves += hasWolves;
+      gamesPlayed.villagers += hasVillagers;
+      gamesPlayed.tanner += hasTanner;
+    } else {
+      allTimeStats.gamesPlayed = {
+        werewolves: hasWolves,
+        villagers: hasVillagers,
+        tanner: hasTanner,
+      };
+    }
+
+    if (!allTimeStats.playerStats) {
+      allTimeStats.playerStats = {};
+    }
+
+    // for each player, find a matching object key, else create new
+    results.players.forEach(player => {
+      const result: PlayerGameStat = {
+        startingCharacter: player.startingCharacter.name,
+        character: player.character.name,
+        win: results.winningTeams.includes(player.character.team),
+        date: moment().format('YYYY-MM-DD HH:mm:ss'),
+      };
+      if (player.character.team === Team.VILLAGER) {
+        result.votedForWerewolf = results.players
+          .find(({ name }) => player.vote === name)?.character?.team === Team.WEREWOLF;
+      }
+      if (allTimeStats.playerStats[player.name]) {
+        allTimeStats.playerStats[player.name].push(result);
+      } else {
+        allTimeStats.playerStats[player.name] = [result];
+      }
+    });
+
+    // store new stats
+    await Redis.set('all-time-stats', JSON.stringify(allTimeStats));
+  } catch (e) {
+    console.log('Error updating all-time stats:', e.message);
+  }
+};
+
+const getGameResults = async (clients: MyWebSocket[], gameId: string): Promise<IGameResults> => {
+  // add up votes, player(s) with most votes above 1 are killed
+  const votes: {[name: string]: {
+      character: Character;
+      numVotes: number;
+    }} = {};
+  clients.forEach(voter => {
+    if (voter.vote) {
+      if (votes[voter.vote]) {
+        votes[voter.vote].numVotes += 1;
+      } else {
+        votes[voter.vote] = {
+          numVotes: 1,
+          character: clients.find(c => c.name === voter.vote)?.character,
+        };
+      }
+    }
+  });
+
+  // convert to array and sort by votes
+  const voteArr: {
+    name: string;
+    character: Character;
+    numVotes: number;
+  }[] = Object.entries(votes)
+    .map(([name, entry]) => ({
+      name,
+      ...entry,
+    }));
+  voteArr.sort(({ numVotes: a }, { numVotes: b }) => b - a);
+  const maxVotes = get(voteArr, '0.numVotes', 0);
+
+  const killed: IKilled[] = voteArr
+    .filter(({ numVotes }) => numVotes > 1) // remove those with 1 or fewer votes
+    .filter(({ name }) => name !== 'Middle') // remove Middle votes
+    .filter(({ numVotes }) => numVotes === maxVotes) // get max votes killed
+    .map(({ name }) => ({ // get only the max votes
+      name,
+      character: clients.find(c => c.name === name)?.character,
+    }));
+
+  // check to see if one of the killed players is the hunter
+  const hunterKilled = killed.some(dead => dead.character.name === 'Hunter');
+  if (hunterKilled) {
+    // find client with hunter
+    const hunterVote = clients.find(c => c.character.name === 'Hunter')?.vote;
+    if (hunterVote) {
+      killed.push({
+        name: hunterVote,
+        character: clients.find(c => c.name === hunterVote).character,
+        killedByHunter: true,
+      });
+    }
+  }
+
+  const winningTeams = [];
+
+  const tannerDied = killed.some(dead => dead.character.team === Team.SELF);
+  const wwDied = killed.some(dead => dead.character.team === Team.WEREWOLF);
+  const minionDied = killed.some(dead => dead.character.team === Team.WEREWOLF_ALLY);
+  const villagerDied = killed.some(dead => dead.character.team === Team.VILLAGER);
+  const wwExists = clients.some(c => c.character.team === Team.WEREWOLF);
+  const minionExists = clients.some(c => c.character.team === Team.WEREWOLF_ALLY);
+
+  if (tannerDied) {
+    winningTeams.push(Team.SELF);
+  }
+
+  if (
+    wwDied // at least one werewolf dies
+    || (
+      !wwExists // no werewolf in play
+      && !villagerDied
+      && !tannerDied
+    )) {
+    winningTeams.push(Team.VILLAGER);
+  } else if (
+    wwExists // one character is a WW
+    && !wwDied // ww didn't die
+    && !tannerDied // and the tanner didn't win
+  ) {
+    winningTeams.push(Team.WEREWOLF);
+  } else if (
+    !wwExists // no ww's
+    && minionExists
+    && !minionDied
+    && villagerDied
+    && !tannerDied
+  ) {
+    winningTeams.push(Team.WEREWOLF_ALLY);
+  }
+
+  const { middleCards } = JSON.parse(await Redis.get(`characters-${gameId}`));
+  const log: LogItem[] = JSON.parse(await Redis.get(`log-${gameId}`));
+
+  // at this point, we can copy the doppelganger starting character into the current player doppelganger
+  const startingDoppelganger = clients
+    .find(c => c.startingCharacter?.name?.startsWith('Doppelganger'))
+    ?.startingCharacter;
+  if (startingDoppelganger) {
+    clients.forEach(c => {
+      if (c.character.name === 'Doppelganger') {
+        c.character = startingDoppelganger;
+      }
+    });
+  }
+
+  const results = {
+    votes,
+    winningTeams,
+    killed,
+    log,
+    middleCards,
+    players: clients,
+  };
+
+  // store all time stats
+  await storeStats(results);
+
+  return results;
+};
 
 const pauseGame = (gameId: string) => {
   const game = games.find(g => g.gameId === gameId);
@@ -109,8 +304,6 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
   clients.forEach(client => {
     results[client.name] = client.character;
 
-    // set votes
-    // console.log('v', client.vote);
     if (client.vote) {
 	    if (votes[client.vote]) {
 	      votes[client.vote] = votes[client.vote] + 1;
@@ -123,22 +316,12 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
       gameId = client.gameId;
     }
   });
-  // console.log(1, `characters-${gameId}`);
-  // console.log(2, await Redis.get(`characters-${gameId}`));
-  const { middleCards } = JSON.parse(await Redis.get(`characters-${gameId}`));
-  // results.middleCards = middleCards;
 
-  const log: LogItem[] = JSON.parse(await Redis.get(`log-${gameId}`));
+  const gameResults = await getGameResults(getClientsInRoom(wss, roomId), gameId);
 
-  // console.log('e1');
   clients.forEach(client => client.send(JSON.stringify({
     action: WebSocketAction.GAME_END,
-    results: {
-      characterResults: results,
-      middleCards,
-      votes,
-      log,
-    },
+    results: gameResults,
   })));
 
   const gameIndex = games.findIndex(g => g.gameId === gameId);
@@ -169,7 +352,6 @@ const nextCharacterTurn = async (wss: WebSocket.Server, roomId: string, gameId: 
       key: 'daylight',
       order: 9000,
       team: Team.UNKNOWN,
-      doppel: false,
     };
 
   const game = games.find(g => g.gameId === gameId);
@@ -267,9 +449,8 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   const shuffled = shuffle(m.config.originalCharacters);
 
   // TODO DEBUGGING ONLY
-  /*
   shuffled.sort((a, b) => {
-    const c = 'Doppelganger';
+    const c = 'Hunter';
     if (a.name === c || a.name === 'Mason') {
       return 1;
     }
@@ -277,7 +458,6 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   });
   // shuffled.splice(0, 0, shuffled.pop());
   // TODO END DEBUGGING
-   */
 
   const characterMap: { [key: string]: Character } = {};
   getClientsInRoom(webSocketServer, ws.roomId).forEach(client => {

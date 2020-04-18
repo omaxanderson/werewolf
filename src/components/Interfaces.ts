@@ -1,4 +1,4 @@
-import { Character } from './Characters';
+import { Character, Team } from './Characters';
 import * as WebSocket from 'websocket';
 import { CustomWebSocket, MyWebSocket } from '../Websocket';
 import Timeout = NodeJS.Timeout;
@@ -110,4 +110,48 @@ export interface IGame {
   endTimeInMs?: number;
   timeRemainingInMs?: number;
   players: MyWebSocket[];
+}
+
+export interface IKilled {
+  name: string;
+  character: Character;
+  killedByHunter?: boolean;
+}
+
+export interface IGameResults {
+  votes: {
+    [name: string]: {
+      numVotes: number;
+      character: Character;
+    };
+  },
+  winningTeams: Team[],
+  killed: IKilled[],
+  players: CustomWebSocket[];
+  log: LogItem[];
+  middleCards: Character[];
+}
+
+export interface PlayerGameStat {
+  startingCharacter: string;
+  character: string;
+  win: boolean;
+  date: string;
+  votedForWerewolf?: boolean;
+}
+
+export interface IAllTimeResults {
+  gamesWon: {
+    werewolves: number;
+    villagers: number;
+    tanner: number;
+  };
+  gamesPlayed: {
+    werewolves: number;
+    villagers: number;
+    tanner: number;
+  };
+  playerStats: {
+    [name: string]: PlayerGameStat[];
+  };
 }
