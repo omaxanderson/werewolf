@@ -113,6 +113,17 @@ const storeStats = async (results: IGameResults): Promise<void> => {
 };
 
 const getGameResults = async (clients: MyWebSocket[], gameId: string): Promise<IGameResults> => {
+  // at this point, we can copy the doppelganger starting character into the current player doppelganger
+  const startingDoppelganger = clients
+    .find(c => c.startingCharacter?.name?.startsWith('Doppelganger'))
+    ?.startingCharacter;
+  if (startingDoppelganger) {
+    clients.forEach(c => {
+      if (c.character.name === 'Doppelganger') {
+        c.character = startingDoppelganger;
+      }
+    });
+  }
   // add up votes, player(s) with most votes above 1 are killed
   const votes: {[name: string]: {
       character: Character;
@@ -148,9 +159,9 @@ const getGameResults = async (clients: MyWebSocket[], gameId: string): Promise<I
     .filter(({ numVotes }) => numVotes > 1) // remove those with 1 or fewer votes
     .filter(({ name }) => name !== 'Middle') // remove Middle votes
     .filter(({ numVotes }) => numVotes === maxVotes) // get max votes killed
-    .map(({ name }) => ({ // get only the max votes
+    .map(({ name, character }) => ({ // get only the max votes
       name,
-      character: clients.find(c => c.name === name)?.character,
+      character,
     }));
 
   // check to see if one of the killed players is the hunter
@@ -162,6 +173,19 @@ const getGameResults = async (clients: MyWebSocket[], gameId: string): Promise<I
       killed.push({
         name: hunterVote,
         character: clients.find(c => c.name === hunterVote).character,
+        killedByHunter: true,
+      });
+    }
+  }
+  // check to see if one of the killed players is the doppelhunter
+  const doppelgangerHunterKilled = killed.some(dead => dead.character.name === 'Doppelganger Hunter');
+  if (doppelgangerHunterKilled) {
+    // find client with hunter
+    const doppelgangerHunterVote = clients.find(c => c.character.name === 'Doppelganger Hunter')?.vote;
+    if (doppelgangerHunterVote) {
+      killed.push({
+        name: doppelgangerHunterVote,
+        character: clients.find(c => c.name === doppelgangerHunterVote).character,
         killedByHunter: true,
       });
     }
@@ -207,17 +231,6 @@ const getGameResults = async (clients: MyWebSocket[], gameId: string): Promise<I
   const { middleCards } = JSON.parse(await Redis.get(`characters-${gameId}`));
   const log: LogItem[] = JSON.parse(await Redis.get(`log-${gameId}`));
 
-  // at this point, we can copy the doppelganger starting character into the current player doppelganger
-  const startingDoppelganger = clients
-    .find(c => c.startingCharacter?.name?.startsWith('Doppelganger'))
-    ?.startingCharacter;
-  if (startingDoppelganger) {
-    clients.forEach(c => {
-      if (c.character.name === 'Doppelganger') {
-        c.character = startingDoppelganger;
-      }
-    });
-  }
 
   const results = {
     votes,
@@ -451,7 +464,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   // TODO DEBUGGING ONLY
   shuffled.sort((a, b) => {
     const c = 'Hunter';
-    if (a.name === c || a.name === 'Mason') {
+    if (a.name === c || a.name === 'Doppelganger' || a.name === 'Werewolf') {
       return 1;
     }
     return -1;
