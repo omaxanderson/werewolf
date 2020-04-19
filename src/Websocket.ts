@@ -332,10 +332,13 @@ const sendFinalCharacters = async (wss: WebSocket.Server, roomId: string) => {
 
   const gameResults = await getGameResults(getClientsInRoom(wss, roomId), gameId);
 
-  clients.forEach(client => client.send(JSON.stringify({
-    action: WebSocketAction.GAME_END,
-    results: gameResults,
-  })));
+  clients.forEach(client => {
+    console.log('sending to ', client.name);
+    client.send(JSON.stringify({
+      action: WebSocketAction.GAME_END,
+      results: gameResults,
+    }))
+  });
 
   const gameIndex = games.findIndex(g => g.gameId === gameId);
   clearTimeout(games[gameIndex].resultsTimer);
