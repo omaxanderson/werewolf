@@ -462,6 +462,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
   const shuffled = shuffle(m.config.originalCharacters);
 
   // TODO DEBUGGING ONLY
+  /*
   shuffled.sort((a, b) => {
     const c = 'Hunter';
     if (a.name === c || a.name === 'Doppelganger' || a.name === 'Werewolf') {
@@ -469,6 +470,7 @@ const onStartGame = async (webSocketServer: WebSocket.Server, ws: MyWebSocket, m
     }
     return -1;
   });
+   */
   // shuffled.splice(0, 0, shuffled.pop());
   // TODO END DEBUGGING
 
