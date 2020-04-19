@@ -127,7 +127,7 @@ export interface IGameResults {
   },
   winningTeams: Team[],
   killed: IKilled[],
-  players: CustomWebSocket[];
+  players: Pick<CustomWebSocket, 'character' | 'startingCharacter' | 'name' | 'vote'>[];
   log: LogItem[];
   middleCards: Character[];
 }

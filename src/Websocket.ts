@@ -238,7 +238,12 @@ const getGameResults = async (clients: MyWebSocket[], gameId: string): Promise<I
     killed,
     log,
     middleCards,
-    players: clients,
+    players: clients.map(c => ({
+      character: c.character,
+      name: c.name,
+      startingCharacter: c.startingCharacter,
+      vote: c.vote,
+    })),
   };
 
   // store all time stats
