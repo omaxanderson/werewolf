@@ -10,6 +10,7 @@
     "build": "npm run build:server && npm run build:react",
     "start": "npm run build && node ./dist/app.js",
     "start:dev": "concurrently --names=server,ui \"nodemon ./src/app.ts\" \"webpack --watch\"",
+    "start:prod": "node ./dist/app.js",
     "clean": "rm -rf ./dist && rm src/public/*"
   },
   "author": "",

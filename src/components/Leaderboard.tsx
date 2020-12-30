@@ -62,11 +62,6 @@ class Leaderboard extends React.Component<{}, {
     const leaders = this.getLeaders();
     const { details } = this.state;
     console.log(leaders);
-    console.log(
-      'heyooo',
-      leaders && leaders[0].games.filter(g => g.character.team === Team.VILLAGER),
-      leaders && leaders[0].games.filter(g => [Team.WEREWOLF, Team.WEREWOLF_ALLY].includes(g.character.team))
-  );
     return (
       <>
         <Modal
