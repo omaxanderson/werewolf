@@ -70,7 +70,7 @@ const storeStats = async (results: IGameResults): Promise<void> => {
       .some(p => p.character.team === Team.VILLAGER) ? 1 : 0;
     const hasTanner = results.players.some(p => p.character.name === 'Tanner') ? 1 : 0;
 
-      if (gamesPlayed) {
+    if (gamesPlayed) {
       gamesPlayed.werewolves += hasWolves;
       gamesPlayed.villagers += hasVillagers;
       gamesPlayed.tanner += hasTanner;
@@ -89,8 +89,14 @@ const storeStats = async (results: IGameResults): Promise<void> => {
     // for each player, find a matching object key, else create new
     results.players.forEach(player => {
       const result: PlayerGameStat = {
-        startingCharacter: player.startingCharacter.name,
-        character: player.character.name,
+        startingCharacter: {
+          name: player.startingCharacter.name,
+          team: player.startingCharacter.team,
+        },
+        character: {
+          name: player.character.name,
+          team: player.character.team,
+        },
         win: results.winningTeams.includes(player.character.team),
         date: moment().format('YYYY-MM-DD HH:mm:ss'),
       };

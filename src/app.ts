@@ -5,9 +5,11 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import sassMiddleware from 'node-sass-middleware';
 import * as http from 'http';
+const colors = require('colors');
 
 import setupWebSocketServer from './Websocket';
 import indexRouter from './routes';
+import apiRouter from './routes/api';
 import debugRouter from './routes/debug';
 
 const debug = require('debug')('untitled:server');
@@ -30,7 +32,11 @@ app.use(sassMiddleware({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+console.log(colors.cyan('Registering index router'));
 app.use('/', indexRouter);
+console.log(colors.cyan('Registering api router'));
+app.use('/api', apiRouter);
+console.log(colors.cyan('Registering debug router'));
 app.use('/debug', debugRouter);
 // app.use('/users', usersRouter);
 

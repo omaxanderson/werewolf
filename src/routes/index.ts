@@ -9,6 +9,11 @@ const homeHandler = (req, res, next) => {
 };
 
 router.get('/', homeHandler);
+router.get('/leaderboard', (req, res, next) => {
+  res.render('leaderboard', {
+    title: 'Leaderboard',
+  });
+});
 router.get(/^\/[a-f0-9]{8}/, homeHandler);
 
 export default router;

@@ -133,8 +133,8 @@ export interface IGameResults {
 }
 
 export interface PlayerGameStat {
-  startingCharacter: string;
-  character: string;
+  startingCharacter: Pick<Character, 'name' | 'team'>;
+  character: Pick<Character, 'name' | 'team'>;
   win: boolean;
   date: string;
   votedForWerewolf?: boolean;
